@@ -25,6 +25,7 @@ if (terminalMode) {
   submitLabel.textContent = "Открыть кассу";
   loginInput.value = loginQuery.get("login") || "";
 }
+if (!terminalMode && loginQuery.has("login")) loginInput.value = loginQuery.get("login");
 if (loginQuery.get("access") === "changed") loginNotice.classList.remove("hidden");
 if (loginQuery.get("server") === "unavailable") showLoginError("Сервер Oimo недоступен. Запустите проект через Docker и обновите страницу.");
 
@@ -65,4 +66,4 @@ loginForm.addEventListener("submit", async (event) => {
   }
 });
 
-restoreServerSession();
+if (!loginQuery.has("login") && loginQuery.get("mode") !== "admin") restoreServerSession();

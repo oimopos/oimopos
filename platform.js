@@ -59,6 +59,13 @@ function recordLabel(count) {
   return `${count} записей`;
 }
 
+function tenantLoginUrl(tenant) {
+  const url = new URL("/login", location.origin);
+  url.searchParams.set("mode", "admin");
+  if (tenant.owner_login) url.searchParams.set("login", tenant.owner_login);
+  return url.href;
+}
+
 function renderTenants() {
   const search = $("#tenantSearch").value.trim().toLowerCase();
   const status = $("#tenantStatusFilter").value;
@@ -82,7 +89,7 @@ function renderTenants() {
         <td><div class="owner-cell"><span class="owner-avatar">${escapeHtml(initials(owner))}</span><div class="company-cell"><b>${escapeHtml(owner)}</b><small>${escapeHtml(tenant.owner_login || "Логин не назначен")}</small></div></div></td>
         <td><span class="status-badge ${escapeHtml(tenant.subscription_status)}">${escapeHtml(statusLabel(tenant.subscription_status))}</span>${tenant.trial_ends_at ? `<span class="subscription-date">до ${formatDate(tenant.trial_ends_at)}</span>` : ""}</td>
         <td><span class="status-badge ${escapeHtml(tenant.status)}">${escapeHtml(statusLabel(tenant.status))}</span></td>
-        <td><div class="row-actions"><button class="row-action" data-edit-tenant="${escapeHtml(tenant.id)}" type="button" title="Настроить клиента" aria-label="Настроить клиента">${icon("settings")}</button><button class="row-action warning" data-toggle-tenant="${escapeHtml(tenant.id)}" data-next-status="${nextStatus}" type="button" title="${toggleLabel}" aria-label="${toggleLabel}">${icon(tenant.status === "active" ? "pause" : "play")}</button><button class="row-action warning" data-delete-tenant="${escapeHtml(tenant.id)}" type="button" aria-label="Удалить аккаунт" title="Удалить аккаунт"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7m4-7v7"/></svg></button></div></td>
+        <td><div class="row-actions"><a class="row-action" href="${escapeHtml(tenantLoginUrl(tenant))}" target="_blank" rel="noopener noreferrer" title="Открыть вход в админку" aria-label="Открыть вход в админку">${icon("logout")}</a><button class="row-action" data-copy-login="${escapeHtml(tenant.id)}" type="button" title="Скопировать ссылку на вход" aria-label="Скопировать ссылку на вход">${icon("copy")}</button><button class="row-action" data-edit-tenant="${escapeHtml(tenant.id)}" type="button" title="Настроить клиента" aria-label="Настроить клиента">${icon("settings")}</button><button class="row-action warning" data-toggle-tenant="${escapeHtml(tenant.id)}" data-next-status="${nextStatus}" type="button" title="${toggleLabel}" aria-label="${toggleLabel}">${icon(tenant.status === "active" ? "pause" : "play")}</button><button class="row-action warning" data-delete-tenant="${escapeHtml(tenant.id)}" type="button" aria-label="Удалить аккаунт" title="Удалить аккаунт"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7m4-7v7"/></svg></button></div></td>
       </tr>`;
   }).join("");
   $("#tenantEmpty").classList.toggle("hidden", filtered.length > 0);
@@ -352,6 +359,12 @@ $("#tenantBackButton").addEventListener("click", () => { tenantStep = Math.max(1
 $("#tenantSearch").addEventListener("input", renderTenants);
 $("#tenantStatusFilter").addEventListener("change", renderTenants);
 $("#tenantTable").addEventListener("click", (event) => {
+  const copyButton = event.target.closest("[data-copy-login]");
+  if (copyButton) {
+    const tenant = tenants.find(item => item.id === copyButton.dataset.copyLogin);
+    if (tenant) navigator.clipboard.writeText(tenantLoginUrl(tenant)).then(() => showToast("Ссылка скопирована"), () => showToast("Не удалось скопировать ссылку. Откройте её соседней кнопкой."));
+    return;
+  }
   const deleteButton = event.target.closest("[data-delete-tenant]");
   if (deleteButton) { openDeleteTenant(deleteButton.dataset.deleteTenant); return; }
   const editButton = event.target.closest("[data-edit-tenant]");
