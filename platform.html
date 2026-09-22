@@ -6,7 +6,7 @@
     <title>Oimo SaaS — клиенты</title>
     <link rel="stylesheet" href="platform.css?v=plans-46" />
     <link rel="stylesheet" href="minimal.css?v=accounting-24" />
-      <link rel="stylesheet" href="oimo.css?v=9" />
+      <link rel="stylesheet" href="oimo.css?v=10" />
   </head>
   <body data-ui="platform">
     <svg class="icon-sprite" aria-hidden="true">
@@ -109,9 +109,18 @@
     </div>
 
     <div class="modal-backdrop hidden" id="eventsModal"><section class="events-modal"><header><button class="workspace-back" data-close-events type="button" aria-label="Вернуться назад"><svg class="icon"><use href="#icon-arrow"/></svg></button><div><p>Аудит платформы</p><h2>Журнал действий</h2></div></header><div id="eventsList" class="events-list"></div></section></div>
+    <dialog id="deleteTenantDialog" aria-labelledby="deleteTenantTitle">
+      <form id="deleteTenantForm">
+        <h2 id="deleteTenantTitle">Удалить аккаунт?</h2>
+        <p>Все заведения, сотрудники, чеки и складские данные компании будут удалены без возможности восстановления в приложении.</p>
+        <label>Введите название: <b id="deleteTenantName"></b><input id="deleteTenantConfirmation" required autocomplete="off" /></label>
+        <p id="deleteTenantError" class="form-error" role="alert"></p>
+        <footer><button id="cancelDeleteTenant" type="button">Отмена</button><button id="confirmDeleteTenant" type="submit" disabled>Удалить навсегда</button></footer>
+      </form>
+    </dialog>
     <div class="toast hidden" id="toast"></div>
     <script src="numeric-inputs.js?v=1"></script>
-    <script src="api-client.js?v=oimo-1"></script>
-    <script src="platform.js?v=oimo-1"></script>
+    <script src="api-client.js?v=tenant-delete-1"></script>
+    <script src="platform.js?v=tenant-delete-1"></script>
   </body>
 </html>

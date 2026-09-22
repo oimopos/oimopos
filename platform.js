@@ -82,7 +82,7 @@ function renderTenants() {
         <td><div class="owner-cell"><span class="owner-avatar">${escapeHtml(initials(owner))}</span><div class="company-cell"><b>${escapeHtml(owner)}</b><small>${escapeHtml(tenant.owner_login || "Логин не назначен")}</small></div></div></td>
         <td><span class="status-badge ${escapeHtml(tenant.subscription_status)}">${escapeHtml(statusLabel(tenant.subscription_status))}</span>${tenant.trial_ends_at ? `<span class="subscription-date">до ${formatDate(tenant.trial_ends_at)}</span>` : ""}</td>
         <td><span class="status-badge ${escapeHtml(tenant.status)}">${escapeHtml(statusLabel(tenant.status))}</span></td>
-        <td><div class="row-actions"><button class="row-action" data-edit-tenant="${escapeHtml(tenant.id)}" type="button" title="Настроить клиента" aria-label="Настроить клиента">${icon("settings")}</button><button class="row-action warning" data-toggle-tenant="${escapeHtml(tenant.id)}" data-next-status="${nextStatus}" type="button" title="${toggleLabel}" aria-label="${toggleLabel}">${icon(tenant.status === "active" ? "pause" : "play")}</button></div></td>
+        <td><div class="row-actions"><button class="row-action" data-edit-tenant="${escapeHtml(tenant.id)}" type="button" title="Настроить клиента" aria-label="Настроить клиента">${icon("settings")}</button><button class="row-action warning" data-toggle-tenant="${escapeHtml(tenant.id)}" data-next-status="${nextStatus}" type="button" title="${toggleLabel}" aria-label="${toggleLabel}">${icon(tenant.status === "active" ? "pause" : "play")}</button><button class="row-action warning" data-delete-tenant="${escapeHtml(tenant.id)}" type="button" aria-label="Удалить аккаунт">Удалить</button></div></td>
       </tr>`;
   }).join("");
   $("#tenantEmpty").classList.toggle("hidden", filtered.length > 0);
@@ -302,7 +302,7 @@ async function openEvents() {
     const events = await window.AshkanaApi.platformEvents(100);
     $("#eventsList").innerHTML = events.length ? events.map((event) => {
       const tenant = tenants.find((entry) => entry.id === event.tenant_id);
-      return `<div class="event-row"><time>${new Date(event.created_at).toLocaleString("ru-RU")}</time><div><b>${escapeHtml(event.actor_login)}</b><small>${escapeHtml(tenant?.name || event.tenant_id || "Платформа")}</small></div><small>${escapeHtml(event.action)}</small></div>`;
+      return `<div class="event-row"><time>${new Date(event.created_at).toLocaleString("ru-RU")}</time><div><b>${escapeHtml(event.actor_login)}</b><small>${escapeHtml(tenant?.name || event.payload?.name || event.tenant_id || "Платформа")}</small></div><small>${escapeHtml(event.action === "tenant.delete" ? "Аккаунт удалён" : event.action)}</small></div>`;
     }).join("") : '<div class="empty-state"><h3>Событий пока нет</h3><p>Действия владельца платформы появятся здесь.</p></div>';
   } catch (error) {
     $("#eventsList").innerHTML = `<div class="empty-state"><h3>Не удалось загрузить журнал</h3><p>${escapeHtml(error.message)}</p></div>`;
@@ -352,6 +352,8 @@ $("#tenantBackButton").addEventListener("click", () => { tenantStep = Math.max(1
 $("#tenantSearch").addEventListener("input", renderTenants);
 $("#tenantStatusFilter").addEventListener("change", renderTenants);
 $("#tenantTable").addEventListener("click", (event) => {
+  const deleteButton = event.target.closest("[data-delete-tenant]");
+  if (deleteButton) { openDeleteTenant(deleteButton.dataset.deleteTenant); return; }
   const editButton = event.target.closest("[data-edit-tenant]");
   if (editButton) { openTenantSettings(editButton.dataset.editTenant); return; }
   const toggleButton = event.target.closest("[data-toggle-tenant]");
@@ -401,4 +403,43 @@ $("#planCards").addEventListener("submit", async event => {
     showToast("Цена тарифа сохранена");
   } catch (error) { form.querySelector(".plan-save-status").textContent = error.message; }
   finally { button.disabled = false; }
+});
+
+let deletingTenant = null;
+let deletingBusy = false;
+function openDeleteTenant(id) {
+  deletingTenant = tenants.find(tenant => tenant.id === id);
+  if (!deletingTenant) return;
+  $("#deleteTenantName").textContent = deletingTenant.name;
+  $("#deleteTenantConfirmation").value = "";
+  $("#deleteTenantError").textContent = "";
+  $("#confirmDeleteTenant").disabled = true;
+  $("#deleteTenantDialog").showModal();
+  $("#deleteTenantConfirmation").focus();
+}
+$("#deleteTenantConfirmation").addEventListener("input", () => {
+  $("#confirmDeleteTenant").disabled = deletingBusy || $("#deleteTenantConfirmation").value !== deletingTenant?.name;
+});
+$("#cancelDeleteTenant").addEventListener("click", () => $("#deleteTenantDialog").close());
+$("#deleteTenantDialog").addEventListener("cancel", event => { if (deletingBusy) event.preventDefault(); });
+$("#deleteTenantForm").addEventListener("submit", async event => {
+  event.preventDefault();
+  if (deletingBusy || !deletingTenant) return;
+  deletingBusy = true;
+  $("#confirmDeleteTenant").disabled = true;
+  $("#cancelDeleteTenant").disabled = true;
+  try {
+    await window.AshkanaApi.deleteTenant(deletingTenant.id, $("#deleteTenantConfirmation").value);
+    tenants = tenants.filter(tenant => tenant.id !== deletingTenant.id);
+    currentCredentials = null;
+    renderTenants();
+    $("#deleteTenantDialog").close();
+    showToast("Аккаунт полностью удалён");
+  } catch (error) {
+    $("#deleteTenantError").textContent = error.message || "Не удалось удалить аккаунт";
+  } finally {
+    deletingBusy = false;
+    $("#cancelDeleteTenant").disabled = false;
+    $("#confirmDeleteTenant").disabled = $("#deleteTenantConfirmation").value !== deletingTenant?.name;
+  }
 });

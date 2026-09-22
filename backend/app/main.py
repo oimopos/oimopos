@@ -31,6 +31,7 @@ from .schemas import (
     TechnicalCardCreate,
     TechnicalCardUpdate,
     TenantCreate,
+    TenantDelete,
     TenantOwnerAccessUpdate,
     TenantUpdate,
     WorkspaceActionInput,
@@ -1716,6 +1717,38 @@ def create_tenant(
         detail = "Этот логин уже используется" if "auth_users_login" in constraint else "Код компании уже используется"
         raise HTTPException(status_code=409, detail=detail) from error
     return _tenant_record(connection, tenant_id)
+
+
+@app.delete("/api/v1/platform/tenants/{tenant_id}", tags=["platform"])
+def delete_tenant(
+    tenant_id: str,
+    payload: TenantDelete,
+    request: Request,
+    user: dict = Depends(current_user),
+    connection: Connection = Depends(get_connection),
+) -> dict:
+    _check_origin(request)
+    _platform_owner(user)
+    with connection.transaction():
+        tenant = connection.execute(
+            "SELECT name FROM tenants WHERE id = %s FOR UPDATE", (tenant_id,),
+        ).fetchone()
+        if not tenant:
+            raise HTTPException(404, "Компания не найдена")
+        if payload.confirmation_name != tenant["name"]:
+            raise HTTPException(400, "Введите точное название компании")
+        connection.execute("SELECT tenant_id FROM operational_state WHERE tenant_id = %s FOR UPDATE", (tenant_id,))
+        # Child records must go first; sessions and PIN sessions cascade with users.
+        for table in ("technical_card_components", "technical_cards", "catalog_items",
+                      "operational_events", "audit_events", "pos_shifts", "platform_events"):
+            connection.execute(f"DELETE FROM {table} WHERE tenant_id = %s", (tenant_id,))
+        connection.execute("DELETE FROM auth_users WHERE tenant_id = %s", (tenant_id,))
+        connection.execute("DELETE FROM tenants WHERE id = %s", (tenant_id,))
+        connection.execute(
+            "INSERT INTO platform_events (actor_user_id, actor_login, action, payload) VALUES (%s, %s, 'tenant.delete', %s)",
+            (user["id"], user["login"], Jsonb({"deleted_tenant_id": tenant_id, "name": tenant["name"]})),
+        )
+    return {"deleted": True, "id": tenant_id}
 
 
 @app.put("/api/v1/platform/tenants/{tenant_id}", tags=["platform"])

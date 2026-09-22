@@ -89,6 +89,7 @@
     closePosShift: (closingCash, stock = {}) => request("/pos/shifts/close", { method: "POST", body: JSON.stringify({ closing_cash: closingCash, ...stock }) }),
     plans: () => request("/platform/plans"),
     updatePlan: (code, payload) => request(`/platform/plans/${encodeURIComponent(code)}`, { method: "PUT", body: JSON.stringify(payload) }),
+    deleteTenant: (id, name) => request(`/platform/tenants/${encodeURIComponent(id)}`, { method: "DELETE", body: JSON.stringify({ confirmation_name: name }) }),
     tenants: () => request("/platform/tenants"),
     createTenant: (payload) => request("/platform/tenants", { method: "POST", body: JSON.stringify(payload) }),
     updateTenant: (tenantId, payload) => request(`/platform/tenants/${encodeURIComponent(tenantId)}`, { method: "PUT", body: JSON.stringify(payload) }),

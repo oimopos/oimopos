@@ -203,6 +203,10 @@ class TenantCreate(BaseModel):
         return self
 
 
+class TenantDelete(BaseModel):
+    confirmation_name: str = Field(min_length=1, max_length=200)
+
+
 class TenantUpdate(BaseModel):
     name: NonEmptyText | None = None
     email: ContactEmail | None = None

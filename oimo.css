@@ -529,3 +529,13 @@ button:disabled {cursor:default;}
   [data-ui=platform] .platform-main {flex:1;min-height:0;height:auto;}
  }
 }
+
+#deleteTenantDialog { border: 0; border-radius: 20px; padding: 24px; width: min(480px, calc(100vw - 32px)); color: #353039; max-height: calc(100dvh - 32px); overflow: auto; }
+#deleteTenantDialog::backdrop { background: #221b2866; }
+#deleteTenantDialog p { line-height: 1.5; }
+#deleteTenantDialog label { display: grid; gap: 8px; }
+#deleteTenantDialog input { width: 100%; min-height: 44px; }
+#deleteTenantDialog footer { display: flex; flex-wrap: wrap; gap: 12px; justify-content: flex-end; margin-top: 20px; }
+#deleteTenantDialog button { padding: 12px 16px; border-radius: 10px; border: 0; cursor: pointer; }
+#confirmDeleteTenant { background: #b13645; color: white; }
+#confirmDeleteTenant:disabled { opacity: .4; cursor: default; }

@@ -33,18 +33,51 @@ try:
   assert 'Secure' in r.headers.get('Set-Cookie','')
   cookie=r.headers['Set-Cookie'].split(';')[0]
  headers={'Content-Type':'application/json','Origin':env['RENDER_EXTERNAL_URL'],'Cookie':cookie}
- def api(path, data=None):
-  request=urllib.request.Request('http://127.0.0.1:18080/api/v1'+path, data=json.dumps(data).encode() if data is not None else None,headers=headers)
+ def api(path, data=None, method=None):
+  request=urllib.request.Request('http://127.0.0.1:18080/api/v1'+path, data=json.dumps(data).encode() if data is not None else None,headers=headers,method=method)
   with urllib.request.urlopen(request) as response:return json.load(response)
  initial=api('/platform/tenants')
  created=[]
+ owner_passwords=[]
  for index in range(2):
-  tenant=api('/platform/tenants',{'name':'Demo '+str(index),'slug':'demo-'+str(index),'owner_name':'Demo Owner','email':f'demo{index}@example.com','phone':'+996555123456','owner_password':secrets.token_hex(16),'service_modes':['counter'],'location_name':'Demo','location_address':'Demo street','register_password':secrets.token_hex(16)})
+  owner_passwords.append(secrets.token_hex(16))
+  tenant=api('/platform/tenants',{'name':'Demo '+str(index),'slug':'demo-'+str(index),'owner_name':'Demo Owner','email':f'demo{index}@example.com','phone':'+996555123456','owner_password':owner_passwords[-1],'service_modes':['counter'],'location_name':'Demo','location_address':'Demo street','register_password':secrets.token_hex(16)})
   created.append(tenant['id'])
  listed=api('/platform/tenants')
  assert all(any(row['id']==identifier for row in listed) for identifier in created)
  assert len(listed)==len(initial)+2
  print('PASS fresh tenant list and two created accounts remain visible')
+ owner_request=urllib.request.Request('http://127.0.0.1:18080/api/v1/auth/login',data=json.dumps({'login':'demo0@example.com','password':owner_passwords[0]}).encode(),headers={'Content-Type':'application/json','Origin':env['RENDER_EXTERNAL_URL']})
+ with urllib.request.urlopen(owner_request) as response: owner_cookie=response.headers['Set-Cookie'].split(';')[0]
+ platform_cookie=headers['Cookie']
+ headers['Cookie']=owner_cookie
+ try:
+  api('/platform/tenants/'+created[1], {'confirmation_name':'Demo 1'}, 'DELETE')
+  raise AssertionError('company owner allowed to delete tenant')
+ except urllib.error.HTTPError as error: assert error.code==403
+ headers['Cookie']=platform_cookie
+ try:
+  api('/platform/tenants/'+created[0], {'confirmation_name':'wrong'}, 'DELETE')
+  raise AssertionError('wrong confirmation accepted')
+ except urllib.error.HTTPError as error: assert error.code==400
+ assert len(api('/platform/tenants'))==len(listed)
+ result=api('/platform/tenants/'+created[0], {'confirmation_name':'Demo 0'}, 'DELETE')
+ assert result['deleted']
+ remaining=api('/platform/tenants')
+ assert created[0] not in [row['id'] for row in remaining]
+ assert created[1] in [row['id'] for row in remaining]
+ assert len(remaining)==len(listed)-1
+ counts=run(['docker','exec',db,'psql','-U','postgres','-Atc',
+  "SELECT count(*) FROM auth_users WHERE tenant_id = '"+created[0]+"'"]).stdout.strip()
+ assert counts=='0'
+ assert any(event['action']=='tenant.delete' for event in api('/platform/events'))
+ headers['Cookie']=owner_cookie
+ try:
+  api('/auth/me')
+  raise AssertionError('deleted session still valid')
+ except urllib.error.HTTPError as error: assert error.code==401
+ headers['Cookie']=platform_cookie
+ print('PASS deletion confirmation, complete account removal, second tenant isolation and audit')
  print('PASS startup, health, frontend, private files not served, login and Secure cookie')
 except subprocess.CalledProcessError as e:
  print(e.stderr.replace(password,'[redacted]')); raise SystemExit(1)
