@@ -501,3 +501,31 @@ button:disabled {cursor:default;}
  #productionDrawer #posProductionForm {flex:1;}
  #productionDrawer #productionFields {flex:1;}
 }
+/* Stable application frames: navigation stays put; content owns its scroll. */
+@media screen {
+ body[data-ui=admin],body[data-ui=platform] {height:100dvh;min-height:0;overflow:hidden;}
+ [data-ui=admin] .admin-shell {height:100dvh;min-height:0;}
+ [data-ui=admin] .admin-main {height:100dvh;min-height:0;display:flex;flex-direction:column;overflow:hidden;}
+ [data-ui=admin] .admin-topbar {flex-shrink:0;position:relative;z-index:6;border-bottom:1px solid var(--op-border);}
+ [data-ui=admin] .admin-content {flex:1;min-height:0;overflow:auto;overscroll-behavior:contain;scrollbar-gutter:stable;}
+ [data-ui=admin] .sidebar {overflow:hidden;}
+ [data-ui=admin] .sidebar :is(.admin-brand,.sidebar-bottom) {flex-shrink:0;}
+ [data-ui=admin] .main-nav {min-height:0;overscroll-behavior:contain;}
+ [data-ui=platform] .platform-shell {height:100dvh;min-height:0;overflow:hidden;}
+ [data-ui=platform] .platform-sidebar {height:100%;min-height:0;overflow:hidden;}
+ [data-ui=platform] .platform-sidebar nav {flex:1;min-height:0;overflow:auto;overscroll-behavior:contain;}
+ [data-ui=platform] :is(.platform-brand,.platform-account) {flex-shrink:0;color:#f6eff5;}
+ [data-ui=platform] .platform-brand b,[data-ui=platform] .platform-account b {color:#f6eff5;}
+ [data-ui=platform] .platform-main {height:100%;min-height:0;display:flex;flex-direction:column;overflow:hidden;}
+ [data-ui=platform] .platform-topbar {flex-shrink:0;border-bottom:1px solid var(--op-border);}
+ [data-ui=platform] .platform-content {flex:1;min-height:0;overflow:auto;overscroll-behavior:contain;scrollbar-gutter:stable;}
+ [data-ui=platform] :is(.tenant-modal,.credentials-modal,.events-modal) > header {position:sticky;top:0;z-index:3;background:white;flex-shrink:0;}
+ [data-ui=platform] :is(.tenant-modal,.credentials-modal) > footer {position:sticky;bottom:0;z-index:3;background:white;flex-shrink:0;}
+ [data-ui=pos] .app-shell > .topbar {flex-shrink:0;}
+ [data-ui=pos] :is(.archive-header,.archive-toolbar,.order-footer) {flex-shrink:0;}
+ @media(max-width:640px) {
+  [data-ui=platform] .platform-shell {display:flex;flex-direction:column;}
+  [data-ui=platform] .platform-sidebar {height:66px;flex-shrink:0;}
+  [data-ui=platform] .platform-main {flex:1;min-height:0;height:auto;}
+ }
+}

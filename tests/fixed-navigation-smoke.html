@@ -1,0 +1,17 @@
+<!doctype html><meta charset="utf-8"><pre id="results">RUNNING</pre><script>
+(async()=>{
+const results=[];
+for(const [page,width,height] of [['admin',1440,900],['admin',1024,768],['platform',1440,900],['platform',768,1024],['platform',390,844]]){
+ const html=await(await fetch('/'+page+'.html')).text();
+ const frame=document.createElement('iframe');frame.style.cssText=`width:${width}px;height:${height}px;border:0`;document.body.append(frame);
+ frame.srcdoc=html.replace(/<script[^>]*>[\s\S]*?<\/script>/g,'').replace('<head>','<head><base href="/">');await new Promise(r=>frame.onload=r);
+ const doc=frame.contentDocument,content=doc.querySelector('.'+page+'-content'),side=doc.querySelector(page==='admin'?'.sidebar':'.platform-sidebar'),bar=doc.querySelector('.'+page+'-topbar');
+ content.innerHTML='<div style="height:3000px">Long content</div>';
+ const before=side.getBoundingClientRect().top,header=bar.getBoundingClientRect().top;
+ content.scrollTop=900;await new Promise(r=>setTimeout(r,50));
+ const okay=content.scrollTop>0&&side.getBoundingClientRect().top===before&&bar.getBoundingClientRect().top===header&&content.getBoundingClientRect().bottom<=height+1;
+ results.push((okay?'PASS':'FAIL')+' '+page+' '+width+'x'+height);frame.remove();
+}
+document.querySelector('#results').textContent=results.join('\n');
+})().catch(e=>document.querySelector('#results').textContent=e.stack);
+</script>

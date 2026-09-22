@@ -5510,7 +5510,7 @@ function switchView(view) {
   else if (view === "finance") history.replaceState(null, "", `#finance/${activeFinanceTab}`);
   else history.replaceState(null, "", `#${view}`);
   if (view === "settings") window.CompanySettings.open(window.CompanySettings.currentTab);
-  window.scrollTo(0, 0);
+  document.querySelector(".admin-content")?.scrollTo(0, 0);
 }
 
 const menuPageConfig = {
