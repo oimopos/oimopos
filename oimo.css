@@ -539,3 +539,24 @@ button:disabled {cursor:default;}
 #deleteTenantDialog button { padding: 12px 16px; border-radius: 10px; border: 0; cursor: pointer; }
 #confirmDeleteTenant { background: #b13645; color: white; }
 #confirmDeleteTenant:disabled { opacity: .4; cursor: default; }
+
+/* Keep compact actions readable and prevent flex items squeezing their icons. */
+[data-ui] button > svg.icon { flex-shrink: 0; }
+[data-ui=platform] .row-actions { width: max-content; min-width: 114px; }
+[data-ui=platform] .row-action { flex: 0 0 34px; padding: 0; }
+[data-ui=admin] .ingredient-delete-action { display: inline-grid; place-items: center; width: 36px; height: 36px; padding: 0; flex: 0 0 36px; }
+[data-ui=admin] .ingredient-delete-action .icon { width: 18px; height: 18px; }
+[data-ui=platform] .platform-account > button { flex-shrink: 0; }
+[data-ui=platform] :is(.company-cell,.owner-cell) { overflow-wrap: anywhere; }
+[data-ui=platform] .platform-account > div { min-width: 0; }
+[data-ui=admin] :is(.table-toolbar,.document-toolbar) { flex-wrap: wrap; gap: 8px; }
+[data-ui] :is(.primary-button,.secondary-button) { max-width: 100%; white-space: normal; overflow-wrap: anywhere; }
+[data-ui] :is(.primary-button,.secondary-button):has(> .icon) { min-width: 44px; }
+@media (max-width: 700px) {
+ [data-ui=platform] .page-heading { flex-wrap: wrap; gap: 12px; }
+ [data-ui=admin] .table-toolbar > button:has(> svg) { min-width: 40px; min-height: 40px; padding: 8px; }
+ [data-ui=admin] .table-toolbar > button:has(> svg) > span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+ [data-ui=pos] :is(.drawer-header,.modal-header) { gap: 12px; }
+ [data-ui=pos] :is(.drawer-header,.modal-header) h2 { min-width: 0; overflow-wrap: anywhere; }
+ [data-ui=pos] :is(.drawer-header,.modal-header) .icon-button { flex-shrink: 0; }
+}
