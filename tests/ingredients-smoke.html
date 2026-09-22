@@ -1,0 +1,30 @@
+<!doctype html><html lang="ru"><meta charset="utf-8"><title>Ingredients registry test</title><pre id="results">RUNNING</pre><iframe id="app" src="../admin.html?test=1#menu/ingredients" style="width:1440px;height:1000px;position:fixed;left:-10000px"></iframe><script>
+document.querySelector('#app').addEventListener('load', async () => {
+ const win=document.querySelector('#app').contentWindow, doc=win.document, checks=[];
+ const check=(name,ok)=>checks.push(`${ok?'PASS':'FAIL'}:${name}`);
+ const change=(id,value)=>{const e=doc.getElementById(id);e.value=value;e.dispatchEvent(new win.Event('change',{bubbles:true}));};
+ const reset=()=>doc.querySelector('#resetIngredientFilters').click();
+ try {
+  check('ingredients-visible',doc.querySelector('#menu-pane-ingredients').classList.contains('active'));
+  change('ingredientCategoryFilter','Овощи');check('category-filter',win.IngredientsList.rows().length>0&&win.IngredientsList.rows().every(r=>r.item.category==='Овощи'));
+  change('ingredientUnitFilter','л');check('combined-empty-state',win.IngredientsList.rows().length===0&&doc.querySelector('#ingredientsTable').textContent.includes('не найдены'));
+  reset();change('ingredientUsageFilter','used');check('usage-filter',win.IngredientsList.rows().every(r=>r.links.length>0));
+  const details=doc.querySelector('[data-ingredient-details]');details.click();check('usage-details',doc.querySelector('.ingredient-usage-row [data-ingredient-link-id]'));
+  reset();change('ingredientStockFilter','positive');check('stock-filter',win.IngredientsList.rows().every(r=>r.stock>0));
+  change('ingredientSort','stock-desc');const rows=win.IngredientsList.rows();check('sort-stock',rows.every((r,i)=>i===0||rows[i-1].stock>=r.stock));
+  const column=doc.querySelector('[data-ingredient-column-toggle="cost"]');column.checked=false;column.dispatchEvent(new win.Event('change',{bubbles:true}));check('hide-column',[...doc.querySelectorAll('[data-ingredient-column="cost"]')].every(e=>e.classList.contains('hidden')));
+  reset();win.openIngredientForm();doc.querySelector('#ingredientNameInput').value='Тест реестра';doc.querySelector('#ingredientBarcodeInput').value='99887766';await win.saveIngredientForm();
+  doc.querySelector('#ingredientSearch').value='99887766';doc.querySelector('#ingredientSearch').dispatchEvent(new win.Event('input',{bubbles:true}));check('barcode-search',win.IngredientsList.rows().length===1&&win.IngredientsList.rows()[0].item.name==='Тест реестра');
+  check('filtered-export',win.IngredientsList.csvText().includes('99887766')&&!win.IngredientsList.csvText().includes('Рис лазер'));
+  const deletedId = win.IngredientsList.rows()[0].item.id;
+  win.eval('recipes[0].components.push({ingredientId: ingredients.find(item => item.name === "Тест реестра").id, quantity: 1})');
+  doc.querySelector('[data-ingredient-delete]').click();check('linked-delete-warning',doc.querySelector('#catalogDeleteDescription').textContent.includes('изменится состав')&&doc.querySelector('#catalogDeleteLinks a'));check('delete-confirmation',!doc.querySelector('#catalogDeleteModal').classList.contains('hidden')&&!doc.querySelector('#confirmCatalogDeleteButton').disabled);await win.confirmCatalogDelete();check('delete-removes-record',win.IngredientsList.rows().length===0);check('recipe-component-removed',!win.eval('recipes[0].components').some(c => c.ingredientId === deletedId) && doc.querySelector('#catalogDeleteTitle').textContent === 'Удаление ингредиента');
+  reset();doc.querySelector('[data-ingredient-delete="rice"]').click();check('linked-delete-protected',doc.querySelector('#confirmCatalogDeleteButton').disabled);doc.querySelector('[data-close="catalogDeleteModal"]').click();
+  const csv='Название;Категория;Ед. измерения;Штрихкод;Лимит остатка\n"Импорт; тест";Бакалея;кг;111222;2';
+  check('csv-quoted-delimiter',win.IngredientsList.parseCsv(csv)[0].name==='Импорт; тест');
+  await win.IngredientsList.importFile(new win.File([csv],'ingredients.csv',{type:'text/csv'}));check('import-preview',doc.querySelector('#ingredientImportPreview').textContent.includes('Импорт; тест'));doc.querySelector('#confirmIngredientImport').click();await new Promise(r=>setTimeout(r,30));
+  check('import-created',win.IngredientsList.rows().some(r=>r.item.barcode==='111222'&&r.stock===0));
+  let rejected=false;try{win.IngredientsList.parseCsv(csv);}catch{rejected=true;}check('duplicate-import-rejected',rejected);
+ }catch(error){checks.push(`FAIL:runtime:${error.stack}`);}
+ document.querySelector('#results').textContent=checks.join('|');
+},{once:true});</script></html>

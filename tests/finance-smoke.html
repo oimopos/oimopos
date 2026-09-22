@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="ru">
+  <head><meta charset="utf-8"><title>Finance smoke test</title></head>
+  <body>
+    <div id="results">RUNNING</div>
+    <iframe id="app" src="../admin.html?test=1#finance/pnl" style="display:none"></iframe>
+    <script>
+      document.querySelector("#app").addEventListener("load", async () => {
+        const frame = document.querySelector("#app");
+        const win = frame.contentWindow;
+        const doc = frame.contentDocument;
+        const financeKey = "ashkana-finance-v1";
+        const salesKey = "ashkana-pos-sales";
+        const snapshot = { finance: win.localStorage.getItem(financeKey), sales: win.localStorage.getItem(salesKey) };
+        const checks = [];
+        const check = (name, condition) => checks.push(`${condition ? "PASS" : "FAIL"}:${name}`);
+        try {
+          win.localStorage.setItem(salesKey, JSON.stringify([{
+            id: "finance-sale-1", number: 7, branchId: "b1", branch: "Столовая №1 — Манаса",
+            createdAt: new Date().toISOString(), paymentMethod: "card", total: 1000, cashier: "Тест",
+            items: [{ id: "p-1", name: "Вода", category: "Напитки", price: 100, unitCost: 40, quantity: 10 }]
+          }]));
+          win.renderAll();
+          win.switchView("finance");
+          check("real-sales-revenue", /1\s*000/.test(doc.querySelector("#financeRevenue").textContent));
+          check("calculated-profit", doc.querySelector("#financeNetProfit").textContent.includes("600"));
+          check("five-working-tabs", doc.querySelectorAll("[data-finance-tab]").length === 5);
+
+          win.openFinanceTransactionForm();
+          doc.querySelector("#financeTransactionType").value = "expense";
+          doc.querySelector("#financeTransactionType").dispatchEvent(new Event("change", { bubbles: true }));
+          doc.querySelector("#financeTransactionAccount").value = "finance-bank";
+          doc.querySelector("#financeTransactionCategory").value = "finance-expense-rent";
+          doc.querySelector("#financeTransactionBranch").value = "b1";
+          doc.querySelector("#financeTransactionAmount").value = "150";
+          doc.querySelector("#financeTransactionCounterparty").value = "Арендодатель";
+          await win.saveFinanceTransaction();
+          let savedFinance = JSON.parse(win.localStorage.getItem(financeKey));
+          check("expense-saved", savedFinance.transactions.length === 1 && savedFinance.transactions[0].amount === 150);
+          check("expense-in-register", doc.querySelector("#financeTransactionsTable").textContent.includes("Арендодатель") && doc.querySelector("#financeTransactionsTable").textContent.includes("Аренда и коммунальные"));
+          check("profit-updated", doc.querySelector("#financeNetProfit").textContent.includes("450"));
+
+          win.openFinanceTransactionForm();
+          doc.querySelector("#financeTransactionType").value = "transfer";
+          doc.querySelector("#financeTransactionType").dispatchEvent(new Event("change", { bubbles: true }));
+          doc.querySelector("#financeTransactionAccount").value = "finance-bank";
+          doc.querySelector("#financeTransactionDestination").value = "finance-safe";
+          doc.querySelector("#financeTransactionAmount").value = "200";
+          await win.saveFinanceTransaction();
+          savedFinance = JSON.parse(win.localStorage.getItem(financeKey));
+          check("transfer-saved", savedFinance.transactions.some((entry) => entry.type === "transfer"));
+          check("transfer-not-in-profit", doc.querySelector("#financeNetProfit").textContent.includes("450"));
+          check("account-balances", win.financeAccountBalance("finance-bank") === 650 && win.financeAccountBalance("finance-safe") === 200);
+
+          win.openFinanceAccountForm();
+          doc.querySelector("#financeAccountName").value = "Тестовый счёт";
+          doc.querySelector("#financeAccountType").value = "other";
+          doc.querySelector("#financeAccountOpening").value = "500";
+          await win.saveFinanceAccount();
+          check("account-create", doc.querySelector("#financeAccountsTable").textContent.includes("Тестовый счёт"));
+
+          win.openFinanceCategoryForm("expense");
+          doc.querySelector("#financeCategoryName").value = "Тестовая статья";
+          await win.saveFinanceCategory();
+          check("category-create", doc.querySelector("#financeExpenseCategories").textContent.includes("Тестовая статья"));
+
+          win.switchFinanceTab("shifts");
+          check("shift-register", doc.querySelector("#financeShiftsTable").textContent.includes("кассовых смен нет"));
+          win.switchFinanceTab("pnl");
+          check("pnl-lines", doc.querySelector("#financePnlRows").textContent.includes("Себестоимость") && doc.querySelector("#financePnlRows").textContent.includes("Аренда и коммунальные"));
+        } catch (error) {
+          checks.push(`FAIL:runtime:${error.message}`);
+        } finally {
+          snapshot.finance === null ? win.localStorage.removeItem(financeKey) : win.localStorage.setItem(financeKey, snapshot.finance);
+          snapshot.sales === null ? win.localStorage.removeItem(salesKey) : win.localStorage.setItem(salesKey, snapshot.sales);
+        }
+        document.querySelector("#results").textContent = checks.join("|");
+      });
+    </script>
+  </body>
+</html>

@@ -1,0 +1,19 @@
+.env
+.DS_Store
+
+
+.runtime/
+backups/
+__pycache__/
+*.pyc
+.env.*
+!.env.example
+
+# Local UI review screenshots (not application assets).
+/admin-inventory.png
+/admin-preview.png
+/admin-recipes.png
+/menu-ingredients.png
+/menu-recipes.png
+/pos-supply-preview.png
+/pos-terminal-preview.png

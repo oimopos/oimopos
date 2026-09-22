@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Oimo — вход</title>
+    <link rel="stylesheet" href="auth.css?v=27" />
+    <link rel="stylesheet" href="minimal.css?v=accounting-24" />
+      <link rel="stylesheet" href="oimo.css?v=1" />
+  </head>
+  <body data-ui="auth">
+    <svg class="icon-sprite" aria-hidden="true">
+      <symbol id="icon-platform" viewBox="0 0 24 24"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 10h2m2 0h2m-6 4h2m2 0h2m-5 7v-3h4v3"/></symbol>
+      <symbol id="icon-network" viewBox="0 0 24 24"><circle cx="12" cy="5" r="2.5"/><circle cx="6" cy="18" r="2.5"/><circle cx="18" cy="18" r="2.5"/><path d="M12 7.5v4M6 15.5v-2h12v2"/></symbol>
+      <symbol id="icon-store" viewBox="0 0 24 24"><path d="M4 10v10h16V10M3 10l2-6h14l2 6M8 20v-6h4v6M3 10a3 3 0 0 0 5 0 3 3 0 0 0 4 0 3 3 0 0 0 4 0 3 3 0 0 0 5 0"/></symbol>
+      <symbol id="icon-lock" viewBox="0 0 24 24"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3m-4 4v3"/></symbol>
+      <symbol id="icon-arrow" viewBox="0 0 24 24"><path d="M5 12h14m-5-5 5 5-5 5"/></symbol>
+    </svg>
+    <main class="auth-shell">
+      <section class="auth-intro">
+        <div class="auth-brand"><span>o</span><div><b>Oimo</b><small>Для столовых и ресторанов</small></div></div>
+        <div class="auth-copy">
+          <p id="authEyebrow">Единая система управления</p>
+          <h1 id="authHeroTitle">Рабочее пространство для каждой организации</h1>
+          <span class="auth-description" id="authHeroDescription">Роли и данные разделены. После входа система откроет доступный вам раздел.</span>
+          <div class="role-list">
+            <article><i><svg class="icon"><use href="#icon-platform"/></svg></i><div><b>Владелец платформы</b><small>Подключение клиентов, тарифы и контроль доступа</small></div></article>
+            <article><i><svg class="icon"><use href="#icon-network"/></svg></i><div><b>Администратор компании</b><small>Точки, сотрудники и общие настройки сети</small></div></article>
+            <article><i><svg class="icon"><use href="#icon-store"/></svg></i><div><b>Точка и сотрудники</b><small>Терминал входит по логину и паролю точки, кассир — по личному PIN</small></div></article>
+          </div>
+        </div>
+        <p class="auth-footnote">Доступ к данным ограничен ролью пользователя и организацией.</p>
+      </section>
+
+      <section class="auth-panel">
+        <form class="login-card" id="loginForm">
+          <div class="mobile-brand"><span>o</span><b>Oimo</b></div>
+          <header><p id="loginEyebrow">Вход в систему</p><h2 id="loginTitle">Добро пожаловать</h2><small id="loginDescription">Введите данные учётной записи. Нужный раздел откроется автоматически.</small></header>
+          <p class="login-notice hidden" id="loginNotice">Администратор обновил доступ точки. Войдите с новым логином и паролем.</p>
+          <label><span>Логин</span><input id="loginInput" name="login" type="text" autocomplete="username" required autofocus /></label>
+          <label><span>Пароль</span><input id="passwordInput" name="password" type="password" autocomplete="current-password" required /></label>
+          <p class="login-error hidden" id="loginError">Неверный логин или пароль</p>
+          <button class="login-submit" type="submit"><span id="loginSubmitLabel">Войти</span><svg class="icon"><use href="#icon-arrow"/></svg></button>
+
+          <div class="demo-access server-access">
+            <i><svg class="icon"><use href="#icon-lock"/></svg></i><div><b id="loginSecurityTitle">Защищённый вход</b><small id="loginSecurityText">Доступ проверяется сервером, пароль в браузере не хранится.</small></div>
+          </div>
+        </form>
+      </section>
+    </main>
+    <script src="numeric-inputs.js?v=1"></script>
+    <script src="api-client.js?v=oimo-1"></script>
+    <script src="auth.js?v=oimo-1"></script>
+  </body>
+</html>

@@ -1,0 +1,46 @@
+<!doctype html><meta charset="utf-8"><title>Custody workflow</title><link rel="stylesheet" href="../minimal.css"><div id="results">RUNNING</div><main id="root" style="max-width:1000px;margin:30px auto;font-family:Arial"></main><script src="../custody.js"></script><script>
+(async()=>{
+ const checks=[];const check=(name,ok)=>checks.push(`${ok?'PASS':'FAIL'}:${name}`);const wait=()=>new Promise(resolve=>setTimeout(resolve,50));
+ try{
+  const root=document.querySelector('#root');const $=s=>root.querySelector(s);let calls=[];
+  const transfer={id:'d1',number:'УЧ-000001',kind:'transfer',status:'pending',batchId:'b1',batchNumber:'АП-1',weight:1,line:'Витрина',actor:{id:1,name:'Повар'},recipient:{id:2,name:'Раздача'},createdAt:new Date().toISOString()};
+  const data={actorId:2,canReview:false,recipients:[{id:2,name:'Раздача'},{id:3,name:'Следующая смена'}],lots:[],kitchens:[],documents:[transfer]};
+  let failure=false;
+  const panel=Custody.mount(root,{load:async()=>structuredClone(data),action:async(action,payload)=>{
+    calls.push({action,payload});if(failure)throw new Error('Остаток изменился. Обновите данные');
+    if(action==='custody.accept'){transfer.status='accepted';data.lots=[{id:'l1',batchId:'b1',batchNumber:'АП-1',name:'Плов',line:'Витрина',balanceWeight:.9,availableWeight:.9,responsibleId:2,responsibleName:'Раздача',canAct:true}];}
+    if(action==='custody.writeoff')data.documents.unshift({id:'d2',number:'УЧ-000002',kind:'writeoff',status:'pending',batchId:'b1',batchNumber:'АП-1',weight:.2,reason:payload.reason,actor:{id:2,name:'Раздача'},createdAt:new Date().toISOString()});
+    if(action==='custody.review')data.documents[0].status='approved';
+    return {state:{}};
+  }});
+  await wait();
+  check('assigned-transfer-visible',$('[data-target]').textContent.includes('УЧ-000001'));
+  $('[data-target]').value='d1';$('[data-target]').dispatchEvent(new Event('change'));$('[data-quantity]').value='.9';$('[data-reason]').value='Расхождение при взвешивании';$('[data-form]').requestSubmit();await wait();await wait();
+  check('acceptance-sends-actual-weight',calls[0]?.action==='custody.accept'&&calls[0].payload.actualWeight===.9&&Boolean(calls[0].payload.requestId));
+  $('[data-operation]').value='writeoff';$('[data-operation]').dispatchEvent(new Event('change'));$('[data-target]').value='l1';$('[data-target]').dispatchEvent(new Event('change'));$('[data-quantity]').value='.2';$('[data-reason]').value='Порча блюда';$('[data-form]').requestSubmit();await wait();await wait();
+  check('writeoff-request',calls[1]?.action==='custody.writeoff'&&calls[1].payload.lotId==='l1'&&calls[1].payload.weight===.2);
+  check('writeoff-journal',$('[data-journal]').textContent.includes('Порча блюда')&&$('[data-journal]').textContent.includes('Ожидает подтверждения'));
+  $('[data-operation]').value='review';$('[data-operation]').dispatchEvent(new Event('change'));
+  check('worker-cannot-review',$('[data-target]').options.length===1&&$('[data-submit]').disabled);
+  data.canReview=true;data.actorId=4;await panel.reviewDocument('d2');check('notification-selects-review',$('[data-operation]').value==='review'&&$('[data-target]').value==='d2');$('[data-target]').value='d2';$('[data-target]').dispatchEvent(new Event('change'));$('[data-reason]').value='Проверил руководитель';$('[data-form]').requestSubmit();await wait();await wait();
+  check('manager-review',calls[2]?.action==='custody.review'&&calls[2].payload.decision==='approve');
+  $('[data-operation]').value='count';$('[data-operation]').dispatchEvent(new Event('change'));$('[data-target]').value='l1';$('[data-target]').dispatchEvent(new Event('change'));$('[data-quantity]').value='.8';$('[data-reason]').value='Взвесили остаток';failure=true;$('[data-form]').requestSubmit();await wait();
+  check('count-includes-snapshot',calls[3]?.payload.expectedWeight===.9&&calls[3].payload.actualWeight===.8);
+  check('stale-error-visible',$('[data-message]').textContent.includes('Остаток изменился'));
+  $('[data-form]').requestSubmit();await wait();check('retry-same-id',calls[3].payload.requestId===calls[4].payload.requestId);
+  $('[data-search]').value='Порча';$('[data-search]').dispatchEvent(new Event('input'));check('journal-search',$('[data-journal]').querySelectorAll('tr').length===1);
+  failure=false;data.documents.unshift({id:'surplus-1',number:'УЧ-000003',name:'Плов',kind:'surplus',status:'pending',batchId:'b1',batchNumber:'АП-1',weight:.5,reason:'Лишние порции',actor:{id:2,name:'Раздача'},createdAt:new Date().toISOString()});
+  await panel.reviewDocument('surplus-1');
+  check('surplus-manager-can-reject',$('[data-target]').value==='surplus-1'&&!$('[data-decision] option[value="reject"]').disabled);
+  $('[data-decision]').value='reject';$('[data-reason]').value='Повторный пересчёт';$('[data-form]').requestSubmit();await wait();
+  check('surplus-review-payload',calls.at(-1)?.action==='custody.review'&&calls.at(-1).payload.documentId==='surplus-1'&&calls.at(-1).payload.decision==='reject');
+  data.documents.unshift({id:'ingredient-count',number:'ИНГ-1',name:'Пересчёт ингредиентов',kind:'ingredient_count',status:'review',batchNumber:'Кухня',items:[{name:'Рис',expectedQuantity:10,actualQuantity:9,variance:-1,unit:'кг'}],reason:'Недостача риса',actor:{id:3,name:'Повар'},createdAt:new Date().toISOString()});
+  await panel.reviewDocument('ingredient-count');
+  $('[data-search]').value='';$('[data-search]').dispatchEvent(new Event('input'));
+  check('ingredient-count-review-visible',$('[data-journal]').textContent.includes('Пересчёт ингредиентов')&&$('[data-journal]').textContent.includes('Рис')&&$('[data-decision] option[value="reject"]').disabled);
+  $('[data-decision]').value='approve';$('[data-reason]').value='Пересчёт проверен';$('[data-form]').requestSubmit();await wait();
+  check('ingredient-count-review-payload',calls.at(-1)?.payload.documentId==='ingredient-count'&&calls.at(-1).payload.decision==='approve');
+ }catch(error){checks.push('FAIL:'+error.message);}
+ document.querySelector('#results').textContent=checks.join('|');
+})();
+</script>

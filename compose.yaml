@@ -1,0 +1,86 @@
+name: ashkana
+
+services:
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-ashkana}
+      POSTGRES_USER: ${POSTGRES_USER:-ashkana}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ashkana_local}
+      TZ: Asia/Almaty
+      PGTZ: Asia/Almaty
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/init:/docker-entrypoint-initdb.d:ro
+      - ./database/migrations:/migrations:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
+
+  migrate:
+    image: postgres:17-alpine
+    restart: "no"
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PGPASSWORD: ${POSTGRES_PASSWORD:-ashkana_local}
+    volumes:
+      - ./database/migrations:/migrations:ro
+    command:
+      - psql
+      - -v
+      - ON_ERROR_STOP=1
+      - -h
+      - db
+      - -U
+      - ${POSTGRES_USER:-ashkana}
+      - -d
+      - ${POSTGRES_DB:-ashkana}
+      - -f
+      - /migrations/apply.sql
+
+  api:
+    env_file:
+      - .runtime/employee-pin.env
+    build:
+      context: ./backend
+    restart: unless-stopped
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-ashkana}:${POSTGRES_PASSWORD:-ashkana_local}@db:5432/${POSTGRES_DB:-ashkana}
+      CORS_ORIGINS: http://127.0.0.1:${WEB_PORT:-8000},http://localhost:${WEB_PORT:-8000}
+      PLATFORM_INITIAL_LOGIN: ${PLATFORM_INITIAL_LOGIN:-platform}
+      PLATFORM_INITIAL_PASSWORD: ${PLATFORM_INITIAL_PASSWORD:-ChangeMe-Platform-2026}
+      SESSION_DAYS: ${SESSION_DAYS:-7}
+      SESSION_COOKIE_SECURE: ${SESSION_COOKIE_SECURE:-false}
+    ports:
+      - "${API_PORT:-8001}:8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=2)"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+
+  web:
+    build:
+      context: .
+      dockerfile: frontend.Dockerfile
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - "${WEB_PORT:-8000}:80"
+
+volumes:
+  postgres_data:

@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="ru"><meta charset="utf-8"><title>Company settings smoke test</title>
+<pre id="results">RUNNING</pre>
+<iframe id="app" src="../admin.html?test=1#settings/general" style="position:fixed;left:-10000px;width:1440px;height:1000px"></iframe>
+<script>
+document.querySelector("#app").addEventListener("load", async () => {
+  const frame = document.querySelector("#app"), win = frame.contentWindow, doc = win.document;
+  const checks = [], check = (name, ok) => checks.push(`${ok ? "PASS" : "FAIL"}:${name}`);
+  const key = "ashkana-company-settings-test", snapshot = win.localStorage.getItem(key);
+  const tab = name => doc.querySelector(`#settingsNavSubmenu [data-settings-tab="${name}"]`).click();
+  const edit = (name, value) => { const input = doc.querySelector(`[name="${name}"]`); if (input.type === "checkbox") input.checked = value; else input.value = value; input.dispatchEvent(new win.Event("input", { bubbles: true })); };
+  const save = async () => { doc.querySelector("#companySettingsForm").requestSubmit(); await new Promise(resolve => setTimeout(resolve, 30)); };
+  try {
+    check("general-route", doc.querySelector("#view-settings").classList.contains("active") && doc.querySelector("#settingsNavSubmenu").classList.contains("visible"));
+    edit("companyName", "Кофейня Тест"); edit("currency", "KZT"); await save();
+    check("general-saved", JSON.parse(win.localStorage.getItem(key)).general.companyName === "Кофейня Тест");
+    for (const name of ["billing", "orders", "delivery", "security", "receipt", "general"]) {
+      tab(name); check(`tab-${name}`, win.location.hash === `#settings/${name}` && doc.querySelector("#companySettings h2"));
+    }
+    check("saved-value-on-return", doc.querySelector('[name="companyName"]').value === "Кофейня Тест");
+    tab("delivery"); doc.querySelector("[data-add-area]").click();
+    const area = doc.querySelector('[data-area-field="name"]'); area.value = "Центр"; area.dispatchEvent(new win.Event("input", { bubbles: true }));
+    edit("enabled", true); await save();
+    check("delivery-zone-saved", JSON.parse(win.localStorage.getItem(key)).delivery.areas[0].name === "Центр");
+    tab("receipt"); edit("showNumber", false); edit("footer", "Приходите снова"); await save();
+    check("receipt-preview-applies-settings", !doc.querySelector("#settingsReceiptPreview").textContent.includes("Чек №") && doc.querySelector("#settingsReceiptPreview").textContent.includes("Приходите снова") && doc.querySelector("#settingsReceiptPreview").textContent.includes("₸"));
+    edit("footer", "Не сохранять"); doc.querySelector("[data-reset-settings]").click();
+    check("cancel-restores-saved", doc.querySelector('[name="footer"]').value === "Приходите снова");
+    tab("security"); edit("closeReceipt", "always"); await save();
+    check("security-saved", JSON.parse(win.localStorage.getItem(key)).security.closeReceipt === "always");
+    const settings = win.CompanySettings.normalize(); settings.receipt.footer = '<img src=x onerror=alert(1)>';
+    const html = win.CompanySettings.receiptHtml({ createdAt: new Date().toISOString(), total: 0 }, settings);
+    check("receipt-escapes-text", html.includes("&lt;img") && !html.includes("<img src=x"));
+    doc.querySelector('[data-nav-section="stock"]').click();
+    check("leave-settings-for-stock", doc.querySelector("#view-inventory").classList.contains("active") && !doc.querySelector("#view-settings").classList.contains("active"));
+  } catch (error) { checks.push(`FAIL:runtime:${error.stack}`); }
+  finally { if (snapshot === null) win.localStorage.removeItem(key); else win.localStorage.setItem(key, snapshot); }
+  document.querySelector("#results").textContent = checks.join("|");
+}, { once: true });
+</script></html>

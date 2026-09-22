@@ -1,0 +1,34 @@
+<!doctype html><meta charset="utf-8"><title>Service plans</title><div id="results">RUNNING</div>
+<script>
+(async () => {
+ const checks=[]; const check=(name,ok)=>checks.push(`${ok?'PASS':'FAIL'}:${name}`);
+ try {
+  const html=await fetch('../platform.html').then(r=>r.text());
+  const frame=document.createElement('iframe');frame.style.cssText=location.search.includes('preview')?'width:100%;height:1200px;border:0':'display:none';document.body.append(frame);
+  frame.srcdoc=html.replace(/<script[^>]*>[\s\S]*?<\/script>/g,'').replace('<head>','<head><base href="/">');
+  await new Promise(resolve=>frame.onload=resolve);
+  const win=frame.contentWindow, doc=frame.contentDocument;
+  const data=[{code:'canteen',name:'Столовая',monthly_price:2000},{code:'restaurant',name:'Ресторан',monthly_price:3500}];
+  let updates=0;
+  win.AshkanaApi={me:async()=>({session:{role:'platform_owner',name:'Владелец',initials:'ВП'}}),plans:async()=>data,tenants:async()=>[{id:'t1',name:'Старая столовая',slug:'old',plan_code:'starter',max_branches:3,status:'active',subscription_status:'active',branch_count:1}],updatePlan:async(code,payload)=>{updates++;const plan=data.find(p=>p.code===code);plan.monthly_price=payload.monthly_price;return plan;}};
+  const script=doc.createElement('script');script.textContent=await fetch('../platform.js').then(r=>r.text());doc.body.append(script);
+  await new Promise(resolve=>setTimeout(resolve,200));
+  check('two-editable-plans',doc.querySelectorAll('[data-plan]').length===2);
+  const form=doc.querySelector('[data-plan="restaurant"]');form.elements.price.value='4200.50';form.requestSubmit();
+  await new Promise(resolve=>setTimeout(resolve,100));
+  check('price-saved-and-reloaded',updates===1&&doc.querySelector('[data-plan="restaurant"] input').value==='4200.5');
+  check('price-in-tenant-selector',doc.querySelector('#tenantPlan').textContent.includes('4 200,5'));
+  win.openTenantSettings('t1');
+  check('legacy-plan-preserved',doc.querySelector('#settingsTenantPlan').value==='starter');
+  doc.querySelector('[data-close-settings]').click();
+  win.openTenantModal();
+  check('new-clients-default-canteen',doc.querySelector('#tenantPlan').value==='canteen');
+  doc.querySelector('[data-close-modal]').click();
+  win.AshkanaApi.updatePlan=async()=>{throw new Error('Нет доступа');};
+  doc.querySelector('[data-plan="canteen"]').requestSubmit();await new Promise(resolve=>setTimeout(resolve,100));
+  check('save-error-visible',doc.querySelector('[data-plan="canteen"] .plan-save-status').textContent==='Нет доступа');
+  if(!location.search.includes('preview'))frame.remove();
+ }catch(error){checks.push('FAIL:'+error.message);}
+ document.querySelector('#results').textContent=checks.join('|');
+})();
+</script>

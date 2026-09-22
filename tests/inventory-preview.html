@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <title>Inventory workflow preview</title>
+    <style>html,body,iframe{width:100%;height:100%;margin:0;border:0;overflow:hidden}iframe{display:block}</style>
+  </head>
+  <body>
+    <iframe id="app" title="Предпросмотр инвентаризации"></iframe>
+    <script>
+      sessionStorage.setItem("ashkana-auth-session-v1", JSON.stringify({ role: "branch", name: "Столовая №1", roleLabel: "Управляющий точки", scope: "Столовая №1 — Манаса", initials: "М1", branchId: "b1", route: "inventory/inventories" }));
+      const frame = document.querySelector("#app");
+      frame.addEventListener("load", () => {
+        frame.contentWindow.openInventoryForm();
+        if (new URLSearchParams(location.search).get("stage") === "count") frame.contentWindow.startInventoryCount();
+      });
+      frame.src = "../admin.html?inventory-preview=1#inventory/inventories";
+    </script>
+  </body>
+</html>

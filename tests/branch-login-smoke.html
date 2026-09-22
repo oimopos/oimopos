@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="ru">
+  <head><meta charset="utf-8"><title>Secure login smoke test</title></head>
+  <body>
+    <div id="results">WAIT</div>
+    <iframe id="app" src="../login.html?v=27" style="display:none"></iframe>
+    <script>
+      document.querySelector("#app").addEventListener("load", async () => {
+        const doc = document.querySelector("#app").contentDocument;
+        const checks = [];
+        const check = (name, condition) => checks.push(`${condition ? "PASS" : "FAIL"}:${name}`);
+        try {
+          const [authSource, adminSource] = await Promise.all([
+            fetch("../auth.js?v=27").then((response) => response.text()),
+            fetch("../admin.js?v=36").then((response) => response.text())
+          ]);
+          check("server-login-form", Boolean(doc.querySelector("#loginForm")) && Boolean(doc.querySelector("#passwordInput")));
+          check("no-demo-credentials", !doc.querySelector("[data-demo-login]") && !doc.body.textContent.includes("manasa123"));
+          check("secure-login-caption", doc.body.textContent.includes("пароль в браузере не хранится"));
+          check("auth-calls-server", authSource.includes("AshkanaApi.login") && authSource.includes("AshkanaApi.me"));
+          check("no-browser-password-database", !authSource.includes("localStorage") && !adminSource.includes("password: \"manasa123\"") && !adminSource.includes("accounts[branch.login]"));
+        } catch (error) {
+          checks.push(`FAIL:runtime:${error.message}`);
+        }
+        document.querySelector("#results").textContent = checks.join("|");
+      });
+    </script>
+  </body>
+</html>

@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Oimo SaaS — клиенты</title>
+    <link rel="stylesheet" href="platform.css?v=plans-46" />
+    <link rel="stylesheet" href="minimal.css?v=accounting-24" />
+      <link rel="stylesheet" href="oimo.css?v=1" />
+  </head>
+  <body data-ui="platform">
+    <svg class="icon-sprite" aria-hidden="true">
+      <symbol id="icon-organizations" viewBox="0 0 24 24"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 10h2m2 0h2m-6 4h2m2 0h2m-5 7v-3h4v3"/></symbol>
+      <symbol id="icon-history" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8m0-5v5h5M12 7v5l3 2"/></symbol>
+      <symbol id="icon-logout" viewBox="0 0 24 24"><path d="M10 17l5-5-5-5m5 5H3m10-9h6a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-6"/></symbol>
+      <symbol id="icon-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+      <symbol id="icon-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></symbol>
+      <symbol id="icon-check" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m8 12 2.5 2.5L16 9"/></symbol>
+      <symbol id="icon-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+      <symbol id="icon-store" viewBox="0 0 24 24"><path d="M4 10v10h16V10M3 10l2-6h14l2 6M8 20v-6h4v6M3 10a3 3 0 0 0 5 0 3 3 0 0 0 4 0 3 3 0 0 0 4 0 3 3 0 0 0 5 0"/></symbol>
+      <symbol id="icon-close" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></symbol>
+      <symbol id="icon-copy" viewBox="0 0 24 24"><rect x="8" y="8" width="11" height="11" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/></symbol>
+      <symbol id="icon-settings" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-2.8 2.8-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6v.2h-4V21a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1L4.2 17l.1-.1a1.7 1.7 0 0 0 .3-1.9A1.7 1.7 0 0 0 3 14H2.8v-4H3a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9L4.2 7 7 4.2l.1.1a1.7 1.7 0 0 0 1.9.3A1.7 1.7 0 0 0 10 3V2.8h4V3a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1L19.8 7l-.1.1a1.7 1.7 0 0 0-.3 1.9 1.7 1.7 0 0 0 1.6 1h.2v4H21a1.7 1.7 0 0 0-1.6 1Z"/></symbol>
+      <symbol id="icon-pause" viewBox="0 0 24 24"><path d="M9 6v12M15 6v12"/></symbol>
+      <symbol id="icon-play" viewBox="0 0 24 24"><path d="m8 5 11 7-11 7Z"/></symbol>
+      <symbol id="icon-arrow" viewBox="0 0 24 24"><path d="M5 12h14m-5-5 5 5-5 5"/></symbol>
+    </svg>
+    <div class="platform-shell">
+      <aside class="platform-sidebar">
+        <div class="platform-brand"><span>o</span><div><b>Oimo</b><small>Управление платформой</small></div></div>
+        <nav aria-label="Навигация платформы"><p>Рабочее пространство</p><button class="active" type="button"><svg class="icon"><use href="#icon-organizations"/></svg><span>Клиенты</span></button><button id="openEventsButton" type="button"><svg class="icon"><use href="#icon-history"/></svg><span>Журнал действий</span></button></nav>
+        <div class="platform-account"><span id="sessionInitials">ВП</span><div><b id="sessionName">Владелец платформы</b><small>Системный администратор</small></div><button id="signOutButton" type="button" title="Выйти" aria-label="Выйти"><svg class="icon"><use href="#icon-logout"/></svg></button></div>
+      </aside>
+
+      <main class="platform-main">
+        <header class="platform-topbar"><div><small>Платформа</small><b>Аккаунты, доступ и подписки</b></div><div class="system-state"><i></i><span>Все сервисы работают</span></div></header>
+        <section class="platform-content">
+          <div class="page-heading"><div><p>Управление клиентами</p><h1>Аккаунты клиентов</h1><small>Каждый аккаунт изолирован и содержит собственные заведения, сотрудников, склады и кассы.</small></div><button class="primary-button" id="openTenantModal" type="button"><svg class="icon"><use href="#icon-plus"/></svg><span>Создать аккаунт</span></button></div>
+
+          <section class="platform-plans" aria-labelledby="plansTitle">
+            <div><h2 id="plansTitle">Тарифы</h2><p>Стоимость за аккаунт в месяц, в сомах. Изменения сохраняются в каталоге; платежи и списания автоматически не выполняются.</p></div>
+            <div id="planCards" class="plan-cards" aria-live="polite">Загрузка тарифов…</div>
+          </section>
+          <div class="platform-metrics">
+            <article><div class="metric-icon indigo"><svg class="icon"><use href="#icon-organizations"/></svg></div><div><span>Аккаунты</span><b id="tenantCount">0</b><small>всего клиентов</small></div></article>
+            <article><div class="metric-icon green"><svg class="icon"><use href="#icon-check"/></svg></div><div><span>Активные</span><b id="activeTenantCount">0</b><small>с доступом к системе</small></div></article>
+            <article><div class="metric-icon amber"><svg class="icon"><use href="#icon-clock"/></svg></div><div><span>Пробный период</span><b id="trialTenantCount">0</b><small>требуют контроля</small></div></article>
+            <article><div class="metric-icon blue"><svg class="icon"><use href="#icon-store"/></svg></div><div><span>Точки</span><b id="branchCount">0</b><small>во всех организациях</small></div></article>
+          </div>
+
+          <article class="platform-panel">
+            <div class="panel-heading"><div><h2>Аккаунты</h2><p>Первое заведение, доступ, подписка и использование тарифа</p></div><span id="tenantTableCount">0 записей</span></div>
+            <div class="panel-toolbar"><label><svg class="icon"><use href="#icon-search"/></svg><input id="tenantSearch" type="search" placeholder="Название, код или логин владельца" /></label><select id="tenantStatusFilter"><option value="all">Все статусы</option><option value="active">Активные</option><option value="suspended">Приостановленные</option><option value="archived">Архивные</option></select></div>
+            <div class="table-scroll"><table><thead><tr><th>Аккаунт и первое заведение</th><th>План</th><th>Использование</th><th>Владелец</th><th>Подписка</th><th>Статус</th><th aria-label="Действия"></th></tr></thead><tbody id="tenantTable"></tbody></table></div>
+            <div class="empty-state hidden" id="tenantEmpty"><svg class="icon"><use href="#icon-search"/></svg><h3>Ничего не найдено</h3><p>Измените параметры поиска или подключите нового клиента.</p></div>
+          </article>
+        </section>
+      </main>
+    </div>
+
+    <div class="modal-backdrop hidden" id="tenantModal">
+      <form class="tenant-modal" id="tenantForm">
+        <header><button class="workspace-back" data-close-modal type="button" aria-label="Вернуться назад"><svg class="icon"><use href="#icon-arrow"/></svg></button><div><p>Новый аккаунт</p><h2>Подключение заведения</h2></div></header>
+        <ol class="onboarding-steps" aria-label="Этапы создания аккаунта"><li class="active" data-tenant-step-indicator="1"><span>1</span><div>Аккаунт<small>Доступ владельца</small></div></li><li data-tenant-step-indicator="2"><span>2</span><div>Формат<small>Профиль бизнеса</small></div></li><li data-tenant-step-indicator="3"><span>3</span><div>Заведение<small>Адрес и касса</small></div></li></ol>
+        <section class="tenant-step" data-tenant-step="1">
+          <div class="form-section"><h3>Аккаунт компании</h3><p>Название сети и данные владельца. Email будет логином в админ-панель.</p><div class="form-grid">
+            <label class="wide"><span>Название аккаунта *</span><input id="tenantName" required maxlength="200" placeholder="Например, Кафе Центральное" /></label>
+            <label><span>Email владельца *</span><input id="tenantOwnerEmail" type="email" required maxlength="200" autocomplete="email" placeholder="owner@company.kg" /></label>
+            <label><span>Телефон *</span><input id="tenantPhone" type="tel" required minlength="5" maxlength="40" autocomplete="tel" placeholder="+996 555 000 000" /></label>
+            <label><span>Имя владельца *</span><input id="tenantOwnerName" required maxlength="200" autocomplete="name" /></label>
+            <label><span>Пароль владельца *</span><div class="password-field"><input id="tenantOwnerPassword" type="text" required minlength="12" maxlength="200" autocomplete="new-password" /><button id="generateTenantPassword" type="button">Создать</button></div></label>
+            <label class="wide"><span>Адрес аккаунта *</span><div class="account-slug-field"><span>app.ashkana.local/</span><input id="tenantSlug" required pattern="[a-z0-9]+(-[a-z0-9]+)*" minlength="3" maxlength="48" placeholder="ashkana" /></div><small>Используется как логин компании на кассовых терминалах.</small></label>
+          </div></div>
+        </section>
+        <section class="tenant-step hidden" data-tenant-step="2">
+          <div class="form-section"><h3>Профиль бизнеса</h3><p>Эти данные задают начальную конфигурацию интерфейса и не смешиваются с реквизитами точки.</p><div class="form-grid">
+            <label><span>Состояние бизнеса *</span><select id="tenantBusinessStatus" required><option value="operating">Уже работает</option><option value="opening">Готовится к открытию</option><option value="learning">Пока изучаю систему</option></select></label>
+            <label><span>Формат заведения *</span><select id="tenantBusinessType" required><option value="canteen">Столовая</option><option value="cafe">Кафе</option><option value="restaurant">Ресторан</option><option value="fast_food">Фастфуд</option><option value="bakery">Пекарня</option><option value="shop">Магазин</option><option value="other">Другое</option></select></label>
+            <fieldset class="wide choice-field"><legend>Как обслуживаете гостей *</legend><div class="choice-grid"><label><input type="checkbox" name="tenantServiceMode" value="counter" checked /><span>У стойки / на раздаче</span></label><label><input type="checkbox" name="tenantServiceMode" value="tables" /><span>За столиками</span></label><label><input type="checkbox" name="tenantServiceMode" value="takeaway" /><span>Навынос</span></label><label><input type="checkbox" name="tenantServiceMode" value="delivery" /><span>Доставка</span></label></div></fieldset>
+            <label><span>Количество сотрудников *</span><select id="tenantEmployeeRange" required><option value="1-3">1–3</option><option value="4-9">4–9</option><option value="10-19">10–19</option><option value="20+">20 и больше</option></select></label>
+          </div></div>
+        </section>
+        <section class="tenant-step hidden" data-tenant-step="3">
+          <div class="form-section"><h3>Первое заведение</h3><p>У точки собственные название, адрес и режим работы. Они отображаются в документах, на складе и в отчётах.</p><div class="form-grid">
+            <label class="wide"><span>Название заведения *</span><input id="tenantLocationName" required maxlength="200" placeholder="Например, Столовая на Манаса" /></label>
+            <label class="wide"><span>Адрес заведения *</span><input id="tenantLocationAddress" required maxlength="200" placeholder="Город, улица, дом" /></label>
+            <label><span>Открытие *</span><input id="tenantLocationOpen" type="time" value="08:00" required /></label><label><span>Закрытие *</span><input id="tenantLocationClose" type="time" value="20:00" required /></label>
+            <label class="wide"><span>Пароль основной кассы *</span><div class="password-field"><input id="tenantRegisterPassword" type="text" required minlength="8" maxlength="200" autocomplete="new-password" /><button id="generateRegisterPassword" type="button">Создать</button></div><small>На терминале вводятся адрес аккаунта и этот пароль, затем кассир вводит личный PIN.</small></label>
+          </div></div>
+          <div class="form-section tariff-section"><h3>Тариф</h3><div class="form-grid"><label><span>План</span><select id="tenantPlan"><option value="canteen">Столовая</option><option value="restaurant">Ресторан</option></select></label><label><span>Лимит точек</span><input id="tenantMaxBranches" type="number" min="1" max="1000" value="3" required /></label><label><span>Пробный период</span><div class="input-suffix"><input id="tenantTrialDays" type="number" min="0" max="365" value="14" required /><span>дней</span></div></label></div></div>
+        </section>
+        <p class="form-error hidden" id="tenantFormError"></p>
+        <footer><button data-close-modal type="button">Отмена</button><button class="hidden" id="tenantBackButton" type="button">Назад</button><button class="primary-button" id="tenantNextButton" type="button">Продолжить</button><button class="primary-button hidden" id="createTenantButton" type="submit">Создать аккаунт</button></footer>
+      </form>
+    </div>
+
+    <div class="modal-backdrop hidden" id="credentialsModal">
+      <section class="credentials-modal"><header><button class="workspace-back" data-close-credentials type="button" aria-label="Вернуться назад"><svg class="icon"><use href="#icon-arrow"/></svg></button><div><p>Аккаунт готов</p><h2 id="credentialsTitle">Данные для входа</h2></div></header><div class="credentials-warning">Сохраните данные сейчас: пароли повторно не отображаются.</div><dl><div><dt>Админ-панель</dt><dd>http://127.0.0.1:8000/login.html</dd></div><div><dt>Email владельца</dt><dd id="credentialsLogin"></dd></div><div><dt>Пароль владельца</dt><dd id="credentialsPassword"></dd></div><div><dt>Первое заведение</dt><dd id="credentialsLocation"></dd></div><div><dt>Логин терминала</dt><dd id="credentialsRegisterLogin"></dd></div><div><dt>Пароль кассы</dt><dd id="credentialsRegisterPassword"></dd></div></dl><footer><button id="copyCredentialsButton" type="button"><svg class="icon"><use href="#icon-copy"/></svg><span>Скопировать</span></button><button class="primary-button" data-close-credentials type="button">Готово</button></footer></section>
+    </div>
+
+    <div class="modal-backdrop hidden" id="tenantSettingsModal">
+      <form class="tenant-modal settings-modal" id="tenantSettingsForm">
+        <header><button class="workspace-back" data-close-settings type="button" aria-label="Вернуться назад"><svg class="icon"><use href="#icon-arrow"/></svg></button><div><p>Настройки клиента</p><h2 id="tenantSettingsTitle">Аккаунт</h2></div></header>
+        <div class="form-section"><h3>Аккаунт и подписка</h3><p>Новые ограничения применяются сразу после сохранения.</p><div class="form-grid"><label class="wide"><span>Название аккаунта</span><input id="settingsTenantName" required maxlength="200" /></label><label><span>Контактный email</span><input id="settingsTenantEmail" type="email" required maxlength="200" /></label><label><span>Телефон</span><input id="settingsTenantPhone" type="tel" required maxlength="40" /></label><label><span>Формат</span><select id="settingsBusinessType"><option value="canteen">Столовая</option><option value="cafe">Кафе</option><option value="restaurant">Ресторан</option><option value="fast_food">Фастфуд</option><option value="bakery">Пекарня</option><option value="shop">Магазин</option><option value="other">Другое</option></select></label><label><span>План</span><select id="settingsTenantPlan"><option value="canteen">Столовая</option><option value="restaurant">Ресторан</option></select></label><label><span>Лимит точек</span><input id="settingsTenantMaxBranches" type="number" min="1" max="1000" required /></label><label><span>Подписка</span><select id="settingsSubscriptionStatus"><option value="trialing">Пробный период</option><option value="active">Активна</option><option value="past_due">Есть задолженность</option><option value="canceled">Завершена</option></select></label><label><span>Доступ</span><select id="settingsTenantStatus"><option value="active">Активен</option><option value="suspended">Приостановлен</option><option value="archived">Архив</option></select></label></div></div>
+        <div class="form-section"><h3>Владелец организации</h3><p>Новый пароль завершит действующие сеансы владельца.</p><div class="form-grid"><label class="wide"><span>Имя владельца</span><input id="settingsOwnerName" required maxlength="200" /></label><label><span>Логин</span><input id="settingsOwnerLogin" required minlength="3" maxlength="64" autocomplete="off" /></label><label><span>Новый временный пароль</span><input id="settingsOwnerPassword" type="text" minlength="12" maxlength="200" autocomplete="new-password" placeholder="Оставьте пустым без изменения" /></label></div></div>
+        <p class="form-error hidden" id="tenantSettingsError"></p>
+        <footer><button data-close-settings type="button">Отмена</button><button class="primary-button" id="saveTenantSettings" type="submit">Сохранить</button></footer>
+      </form>
+    </div>
+
+    <div class="modal-backdrop hidden" id="eventsModal"><section class="events-modal"><header><button class="workspace-back" data-close-events type="button" aria-label="Вернуться назад"><svg class="icon"><use href="#icon-arrow"/></svg></button><div><p>Аудит платформы</p><h2>Журнал действий</h2></div></header><div id="eventsList" class="events-list"></div></section></div>
+    <div class="toast hidden" id="toast"></div>
+    <script src="numeric-inputs.js?v=1"></script>
+    <script src="api-client.js?v=oimo-1"></script>
+    <script src="platform.js?v=oimo-1"></script>
+  </body>
+</html>

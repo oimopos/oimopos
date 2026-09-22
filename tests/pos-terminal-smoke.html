@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="ru">
+  <head><meta charset="utf-8"><title>POS terminal smoke test</title></head>
+  <body>
+    <div id="results">RUNNING</div>
+    <iframe id="app" style="display:none"></iframe>
+    <script>
+      const results = document.querySelector("#results");
+      const checks = [];
+      const check = (name, condition) => checks.push(`${condition ? "PASS" : "FAIL"}:${name}`);
+
+      async function request(path, options = {}) {
+        return fetch(`/api/v1${path}`, {
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          ...options,
+        });
+      }
+
+      async function run() {
+        try {
+          const login = await request("/auth/login", {
+            method: "POST",
+            body: JSON.stringify({ login: "manasa", password: "ChangeMe-Manasa-2026" }),
+          });
+          const loginBody = await login.json();
+          check("terminal-login", login.ok && loginBody.session?.staffRole === "pos_terminal");
+
+          const frame = document.querySelector("#app");
+          await new Promise((resolve) => {
+            frame.addEventListener("load", () => setTimeout(resolve, 1200), { once: true });
+            frame.src = "../index.html?v=38";
+          });
+          const doc = frame.contentDocument;
+          check("operator-lock", !doc.querySelector("#operatorLock").classList.contains("hidden"));
+          check("point-name", doc.querySelector("#operatorBranchName").textContent.includes("Манаса"));
+          check("pin-keypad", doc.querySelectorAll("#pinKeypad [data-pin-key]").length === 12);
+          check("terminal-no-admin", doc.querySelector("#posAdminLink").classList.contains("hidden"));
+          check("operator-choice-state", doc.querySelectorAll("#operatorList [data-operator-id]").length > 0 || !doc.querySelector("#operatorEmpty").classList.contains("hidden"));
+        } catch (error) {
+          checks.push(`FAIL:runtime:${error.message}`);
+        } finally {
+          await request("/auth/logout", { method: "POST", body: "{}" }).catch(() => {});
+          results.textContent = checks.join("|");
+        }
+      }
+
+      run();
+    </script>
+  </body>
+</html>

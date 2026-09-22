@@ -1,0 +1,84 @@
+:root {
+  font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: #26353c;
+  background: #f4f6f8;
+  font-synthesis: none;
+  --navy: #172d38;
+  --violet: #6554c0;
+  --violet-dark: #5745ae;
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; min-height: 100vh; }
+button, input { font: inherit; }
+.hidden { display: none !important; }
+.icon-sprite { position: absolute; width: 0; height: 0; overflow: hidden; }
+.icon { width: 19px; height: 19px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.auth-shell { min-height: 100vh; display: grid; grid-template-columns: minmax(460px, .92fr) minmax(560px, 1.08fr); }
+.auth-intro { min-height: 100vh; padding: 40px clamp(42px, 6vw, 90px) 34px; display: flex; flex-direction: column; color: #fff; background: var(--navy); }
+.auth-brand { display: flex; align-items: center; gap: 12px; }
+.auth-brand > span, .mobile-brand > span { width: 42px; height: 42px; display: grid; place-items: center; border-radius: 11px; color: #fff; background: var(--violet); font-size: 19px; font-weight: 600; }
+.auth-brand b, .auth-brand small { display: block; }
+.auth-brand b { font-size: 17px; font-weight: 600; }
+.auth-brand small { margin-top: 3px; color: #91a2aa; font-size: 12px; }
+.auth-copy { width: min(540px, 100%); margin: auto 0; padding: 70px 0; }
+.auth-copy > p { margin: 0 0 14px; color: #b1a5ef; font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; }
+.auth-copy h1 { max-width: 520px; margin: 0; font-size: clamp(36px, 4vw, 52px); font-weight: 600; line-height: 1.09; letter-spacing: -.035em; }
+.auth-description { display: block; max-width: 510px; margin-top: 19px; color: #afbdc3; font-size: 15px; line-height: 1.6; }
+.role-list { margin-top: 40px; display: grid; gap: 13px; }
+.role-list article { min-height: 70px; padding: 13px 15px; display: flex; align-items: center; gap: 14px; border: 1px solid rgba(255,255,255,.09); border-radius: 11px; background: rgba(255,255,255,.035); }
+.role-list article > i { width: 40px; height: 40px; display: grid; place-items: center; flex: none; border-radius: 9px; color: #b9aff1; background: rgba(151,132,232,.11); }
+.role-list b, .role-list small { display: block; }
+.role-list b { color: #f4f7f8; font-size: 14px; font-weight: 500; }
+.role-list small { margin-top: 4px; color: #91a2aa; font-size: 12px; line-height: 1.4; }
+.auth-footnote { margin: 0; color: #7f939c; font-size: 11px; }
+.auth-panel { padding: 48px; display: grid; place-items: center; background: #f5f7f8; }
+.login-card { width: min(440px, 100%); padding: 39px; border: 1px solid #e0e5e8; border-radius: 16px; background: #fff; box-shadow: 0 24px 70px rgba(28,48,58,.09); }
+.mobile-brand { display: none; }
+.login-card header { margin-bottom: 29px; }
+.login-card header p { margin: 0 0 8px; color: var(--violet); font-size: 12px; font-weight: 600; letter-spacing: .055em; text-transform: uppercase; }
+.login-card h2 { margin: 0; color: #25343b; font-size: 27px; font-weight: 600; letter-spacing: -.025em; }
+.login-card header small { display: block; margin-top: 9px; color: #76858c; font-size: 13px; line-height: 1.55; }
+.login-card > label { margin-top: 17px; display: block; }
+.login-card > label span { display: block; margin-bottom: 7px; color: #536168; font-size: 13px; font-weight: 500; }
+.login-card input { width: 100%; height: 48px; padding: 0 13px; border: 1px solid #d7dee1; border-radius: 9px; outline: 0; color: #26353c; background: #fff; font-size: 14px; transition: border-color .15s, box-shadow .15s; }
+.login-card input:hover { border-color: #c5ced2; }
+.login-card input:focus { border-color: #7968ce; box-shadow: 0 0 0 3px #efedfb; }
+.login-error, .login-notice { margin: 14px 0 0; padding: 11px 13px; border-radius: 8px; font-size: 12px; line-height: 1.45; }
+.login-error { color: #a93d48; background: #fff0f1; }
+.login-notice { color: #5747a3; background: #f0eefb; }
+.login-submit { width: 100%; height: 47px; margin-top: 21px; padding: 0 16px; display: flex; align-items: center; justify-content: center; gap: 10px; border: 0; border-radius: 9px; color: #fff; background: var(--violet); font-size: 14px; font-weight: 500; cursor: pointer; box-shadow: 0 8px 20px rgba(101,84,192,.22); }
+.login-submit:hover { background: var(--violet-dark); }
+.login-submit:disabled { opacity: .6; cursor: wait; }
+.login-submit .icon { width: 17px; height: 17px; }
+.demo-access { margin-top: 28px; padding-top: 22px; display: flex; align-items: flex-start; gap: 11px; border-top: 1px solid #e6eaec; }
+.demo-access > i { width: 34px; height: 34px; display: grid; place-items: center; flex: none; border-radius: 9px; color: #6554c0; background: #efedfb; }
+.demo-access > i .icon { width: 17px; height: 17px; }
+.demo-access b, .demo-access small { display: block; }
+.demo-access b { color: #48575e; font-size: 12px; font-weight: 500; }
+.demo-access small { margin-top: 4px; color: #849197; font-size: 11px; line-height: 1.45; }
+
+.terminal-auth { --violet: #176b4b; --violet-dark: #10543a; }
+.terminal-auth .auth-intro { background: #142b22; }
+.terminal-auth .auth-brand > span,
+.terminal-auth .mobile-brand > span { background: #176b4b; }
+.terminal-auth .auth-copy > p { color: #91c4aa; }
+.terminal-auth .role-list article > i { color: #a9d6bf; background: rgba(82, 177, 127, .12); }
+.terminal-auth .login-card input:focus { border-color: #2a7f5c; box-shadow: 0 0 0 3px #e5f2eb; }
+.terminal-auth .demo-access > i { color: #176b4b; background: #e8f3ed; }
+
+@media (max-width: 900px) {
+  .auth-shell { grid-template-columns: 1fr; }
+  .auth-intro { min-height: auto; padding: 27px; }
+  .auth-copy, .auth-footnote { display: none; }
+  .auth-panel { min-height: calc(100vh - 96px); padding: 34px 18px; }
+}
+
+@media (max-width: 520px) {
+  .auth-intro { display: none; }
+  .auth-panel { min-height: 100vh; padding: 22px 16px; }
+  .login-card { padding: 28px 22px; }
+  .mobile-brand { margin-bottom: 34px; display: flex; align-items: center; gap: 11px; }
+  .mobile-brand > span { width: 38px; height: 38px; font-size: 17px; }
+  .mobile-brand b { color: #2e3d44; font-size: 17px; font-weight: 600; }
+}

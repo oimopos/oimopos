@@ -1,0 +1,33 @@
+services:
+  - type: web
+    name: oimo
+    runtime: docker
+    plan: 0.5c-512mb
+    region: frankfurt
+    dockerfilePath: ./render.Dockerfile
+    dockerContext: .
+    preDeployCommand: python /app/render_migrate.py
+    healthCheckPath: /health
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: oimo-db
+          property: connectionString
+      - key: PLATFORM_INITIAL_LOGIN
+        value: platform
+      - key: PLATFORM_INITIAL_PASSWORD
+        sync: false
+      - key: EMPLOYEE_PIN_KEY
+        generateValue: true
+      - key: SESSION_COOKIE_SECURE
+        value: "true"
+      - key: CORS_ORIGINS
+        value: ""
+databases:
+  - name: oimo-db
+    databaseName: oimo
+    user: oimo
+    plan: 0.1c-256mb
+    region: frankfurt
+    postgresMajorVersion: "17"
+    ipAllowList: []

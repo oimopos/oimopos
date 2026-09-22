@@ -1,0 +1,478 @@
+<!doctype html>
+<html lang="ru">
+  <head><meta charset="utf-8"><title>POS UI smoke test</title></head>
+  <body>
+    <div id="results">RUNNING</div>
+    <script>
+      const checks = [];
+      const check = (name, condition) => { checks.push(`${condition ? "PASS" : "FAIL"}:${name}`); document.querySelector("#results").textContent = checks.join("|"); };
+
+      async function run() {
+        try {
+          const [htmlSource, scriptSource, styleSource] = await Promise.all([
+            fetch("../index.html?v=48").then((response) => response.text()),
+            fetch("../app.js?v=48").then((response) => response.text()),
+            fetch("../styles.css?v=48").then((response) => response.text()),
+          ]);
+          const doc = new DOMParser().parseFromString(htmlSource, "text/html");
+          new Function(scriptSource);
+          check("script-syntax", true);
+          check("poster-toolbar", Boolean(doc.querySelector("#openOrdersButton")) && Boolean(doc.querySelector("#historyButton")) && Boolean(doc.querySelector("#cashMenuButton")));
+          check("order-workflow", Boolean(doc.querySelector("#customerButton")) && Boolean(doc.querySelector("#saveOrderButton")) && Boolean(doc.querySelector("#orderComment")));
+          check("open-orders", Boolean(doc.querySelector("#openOrdersDrawer")) && scriptSource.includes('pos.order.save') && scriptSource.includes('pos.order.remove'));
+          check("customers-discount", Boolean(doc.querySelector("#customerDrawer")) && scriptSource.includes('pos.customer.upsert') && scriptSource.includes('discountPercent'));
+          check("cash-operations", doc.querySelectorAll("[data-cash-action]").length === 3 && scriptSource.includes('pos.cash.movement'));
+          check("terminal-supply", Boolean(doc.querySelector("#supplyButton")) && Boolean(doc.querySelector("#supplyDrawer")) && scriptSource.includes('supply.create'));
+          check("receipt-refund", Boolean(doc.querySelector("#historyDrawer")) && scriptSource.includes('sale.refund') && scriptSource.includes('refundReason'));
+          check("x-report", Boolean(doc.querySelector("#printXReportButton")) && scriptSource.includes('X‑отчёт'));
+          check("drawer-layout", styleSource.includes('.poster-drawer') && styleSource.includes('.cash-shift-summary'));
+
+          const frame = document.createElement("iframe");
+          const preview = new URLSearchParams(location.search).has("preview");
+          frame.style.cssText = preview ? "position:fixed;inset:0;width:100vw;height:100vh;border:0;background:white;z-index:10" : "display:none";
+          document.body.append(frame);
+          const shell = htmlSource.replace(/<script[^>]*>[\s\S]*?<\/script>/g, "").replace("<head>", `<head><base href="/">`).replace("</body>", `
+            <script>
+              window.__runtimeErrors = [];
+              window.addEventListener("error", (event) => window.__runtimeErrors.push(event.message));
+              window.AshkanaApi = {
+                me: async () => ({ session: { role: "branch", staffRole: "pos_terminal", branchId: "b1", registerId: 1, registerName: "Основная касса", tenantSlug: "test" } }),
+                workspace: async () => ({ state: { branches: [{ id: "b1", name: "Buffet 1" }], menuCategories: [{ name: "Горячее", color: "#e39a3d" }, { name: "Напитки", color: "#5b8fbd" }], recipes: [{ id: "r1", name: "Плов праздничный", category: "Горячее", color: "#e39a3d", price: 230, yield: 380 }, { id: "r2", name: "Лагман", category: "Горячее", color: "#bd6557", price: 250, yield: 450 }], products: [{ id: "p1", name: "Вода 0,5 л", category: "Напитки", price: 40, unit: "шт" }, { id: "p2", name: "Coca-Cola 0,5 л", category: "Напитки", price: 80, unit: "шт" }], sales: [], logisticsState: { branchStocks: { b1: { p1: 20, p2: 15 } }, batches: [{ id: "batch-1", branchId: "b1", recipeId: "r1", transferredWeight: 3.8, soldPortions: 0, status: "serving" }, { id: "batch-2", branchId: "b1", recipeId: "r2", transferredWeight: 4.5, soldPortions: 0, status: "serving" }] }, posState: { customers: [], openOrders: [], cashMovements: [] } } }),
+                posOperators: async () => [{ id: 2, name: "Айбек", staffRole: "branch_manager", roleLabel: "Руководитель", initials: "А" }], posOperator: async () => ({ operator: { id: 2, name: "Айбек", staffRole: "branch_manager", roleLabel: "Руководитель", initials: "А" }, shift: { id: 1, openingCash: 5000, openedAt: new Date().toISOString() } }),
+                action: async () => ({}), logout: async () => ({}), lockPos: async () => ({}),
+                posSupplyContext: async () => ({
+                  suppliers: [{ id: "supplier-1", name: "Фрунзе Маркет", phone: "+996 555 111 222", prices: { i1: 115, p1: 27 } }],
+                  items: [{ id: "i1", name: "Рис лазер", category: "Крупы", unit: "кг", averageCost: 110 }, { id: "i2", name: "Говядина", category: "Мясо", unit: "кг", averageCost: 620 }, { id: "p1", name: "Вода 0,5 л", category: "Напитки", unit: "шт", averageCost: 25 }],
+                  accounts: [{ id: "cash-b1", name: "Касса · Buffet 1", type: "cash" }, { id: "bank", name: "Расчётный счёт", type: "bank" }],
+                  supplies: [{ id: "supply-1", number: "ПСТ-0012", supplier: "Фрунзе Маркет", total: 18600, debt: 0, paymentStatus: "paid", receivedAt: new Date().toISOString(), items: [{}, {}] }],
+                }),
+                closingShiftStock: async () => ({version:1,required:false,rows:[]}), unlockPos: async () => ({}), openPosShift: async () => ({}), closePosShift: async () => ({}),
+              };
+            <\/script><script src="/company-settings.js?v=1"><\/script><script src="/custody.js?v=1"><\/script><script src="/app.js?v=48"><\/script></body>`);
+          await new Promise((resolve) => {
+            frame.addEventListener("load", () => setTimeout(resolve, 700), { once: true });
+            frame.srcdoc = shell;
+          });
+          check("runtime-no-errors", frame.contentWindow.__runtimeErrors.length === 0);
+          check("runtime-terminal-render", frame.contentDocument.querySelector("#branchSelect").textContent.includes("Buffet 1") && frame.contentDocument.querySelector("#operatorLock").classList.contains("hidden") && frame.contentDocument.querySelectorAll(".product-card").length === 0 && frame.contentDocument.querySelectorAll("[data-category]").length > 0 && !frame.contentDocument.querySelector("#supplyButton").classList.contains("hidden"));
+          frame.contentDocument.querySelector("#supplyButton").click();
+          await new Promise((resolve) => setTimeout(resolve, 300));
+          check("runtime-supply-drawer", !frame.contentDocument.querySelector("#supplyDrawer").classList.contains("hidden") && frame.contentDocument.querySelectorAll("#posSupplySupplier option").length === 1 && frame.contentDocument.querySelectorAll("#posSupplyLines [data-supply-item] option").length === 4 && frame.contentWindow.__runtimeErrors.length === 0);
+          if (new URLSearchParams(location.search).get("preview") === "catalog") { frame.contentDocument.querySelector("#supplyDrawer").classList.add("hidden"); frame.contentWindow.mobilePosView("catalog"); }
+          if (new URLSearchParams(location.search).get("preview") === "archive") {
+            const win=frame.contentWindow,doc=frame.contentDocument,response=await win.AshkanaApi.workspace();
+            response.state.sales=[{id:'preview',number:55,cashier:'Айбек',createdAt:new Date().toISOString(),total:520,payments:[{method:'cash',amount:320},{method:'card',amount:200}],items:[{name:'Лагман домашний',quantity:2,price:250,unit:'порция'},{name:'Чай',quantity:1,price:20,unit:'шт'}]}];
+            win.hydrateWorkspace(response);win.closeDrawer('#supplyDrawer');win.renderHistory();doc.querySelector('#historyDrawer').classList.remove('hidden');
+          }
+          if (new URLSearchParams(location.search).get("preview") === "checkout") {
+            frame.contentWindow.closeDrawer('#supplyDrawer');
+            frame.contentWindow.addProduct('p1'); frame.contentWindow.openPayment();
+          }
+          if (new URLSearchParams(location.search).get("preview") === "surplus") {
+            const win=frame.contentWindow;
+            win.closeDrawer('#supplyDrawer');
+            win.AshkanaApi.posServingSurpluses=async()=>({lots:[{id:'lot',batchId:'batch',batchNumber:'АП-12',name:'Плов',yield:250,availableWeight:0}],documents:[]});
+            await win.openServingSurplus();
+          }
+          if (new URLSearchParams(location.search).get("preview") === "production") {
+            const win = frame.contentWindow;
+            win.closeDrawer('#supplyDrawer');
+            win.AshkanaApi.posProductionContext = async () => ({recipients:[{id:2,name:'Айбек'}],recipes:[{id:'r1',name:'Плов праздничный',yield:250,maxWeight:12}],batches:[]});
+            await win.openPosProduction();
+            frame.contentDocument.querySelector('#productionItem').value='r1';
+            win.updateProductionQuantity();
+            frame.contentDocument.querySelector('#productionQuantity').value='5';
+          }
+          if (['pin','receiving','kitchen-shift'].includes(new URLSearchParams(location.search).get('preview'))) {
+            const win=frame.contentWindow,doc=frame.contentDocument,mode=new URLSearchParams(location.search).get('preview');
+            win.closeDrawer('#supplyDrawer');
+            if(mode==='pin') await win.lockOperator();
+            if(mode==='receiving') {
+              win.AshkanaApi.posReceiving=async()=>({documents:[{id:'test',name:'Плов праздничный',weight:12,sender:'Повар',batchNumber:'АП-1'}]});
+              await win.openReceiving();
+            }
+            if(mode==='kitchen-shift') {
+              win.AshkanaApi.posProductionContext=async()=>({productionShift:{shift:null,counts:[],ingredientStocks:Array.from({length:20},(_,i)=>({id:'i'+i,name:'Ингредиент '+i,unit:'кг',quantity:117.90079365079366}))},recipes:[],batches:[]});
+              win.activateOperator({id:2,name:'Повар',staffRole:'production',permissions:{production:true}},null);
+              await win.openProductionShift();
+            }
+          }
+          if (new URLSearchParams(location.search).get('preview') === 'kitchen-home') {
+            const win=frame.contentWindow;
+            win.AshkanaApi.posProductionContext=async()=>({productionShift:{shift:{employeeId:2,employeeName:'Айбек',openedAt:new Date().toISOString()},counts:[]},recipes:[],batches:[]});
+            win.closeDrawer('#supplyDrawer');
+            win.activateOperator({id:2,name:'Айбек',staffRole:'production',permissions:{production:true}},null);
+            frame.contentDocument.querySelector('#productionShiftStatus').textContent='Смена производства открыта';
+            frame.contentDocument.querySelector('#productionShiftCaption').textContent='Айбек · с 08:00';
+            frame.contentDocument.querySelector('#productionShiftButton').textContent='Закрыть смену';
+            await new Promise(resolve=>setTimeout(resolve,100));
+            frame.contentDocument.querySelector('#operatorLock').classList.add('hidden');
+          }
+          if (new URLSearchParams(location.search).get('preview') === 'production-many') {
+            const win=frame.contentWindow;
+            win.closeDrawer('#supplyDrawer');
+            win.AshkanaApi.posProductionContext=async()=>({recipes:[{id:'r1',name:'Плов',yield:250,maxWeight:12}],batches:[]});
+            await win.openPosProduction();
+            for(let i=0;i<11;i++)win.addProductionLine();
+          }
+          if (!preview) {
+            const mobileWin=frame.contentWindow,mobileDoc=frame.contentDocument;
+            check('mobile-starts-at-orders',mobileDoc.body.dataset.posView==='orders');
+            mobileDoc.querySelector('#mobileNewOrder').click();
+            check('mobile-new-order-opens-receipt',mobileDoc.body.dataset.posView==='receipt');
+            mobileDoc.querySelector('#mobileAddItems').click();
+            check('mobile-add-opens-categories',mobileDoc.body.dataset.posView==='catalog');
+            mobileWin.addProduct('p1');
+            mobileDoc.querySelector('#mobileReturnReceipt').click();
+            mobileDoc.querySelector('#mobileFlowBack').click();
+            check('mobile-back-preserves-draft',mobileDoc.body.dataset.posView==='orders'&&mobileDoc.querySelector('#orderItems').textContent.includes('Вода'));
+            mobileWin.startNewOrder();
+
+            const win = frame.contentWindow;
+            const doc = frame.contentDocument;
+            const authenticated = await win.AshkanaApi.posOperator();
+            doc.querySelector('[data-category="Напитки"]').click();
+            check('category-click-shows-only-its-products',doc.querySelectorAll('.product-card').length===2 && doc.querySelector('#categories').classList.contains('hidden'));
+            doc.querySelector('#catalogBack').click();
+            check('category-back-hides-dishes',doc.querySelectorAll('.product-card').length===0&&!doc.querySelector('#categories').classList.contains('hidden'));
+            doc.querySelector('#searchInput').value='Вода';win.renderProducts();
+            check('category-home-search',doc.querySelectorAll('.product-card').length===1&&doc.querySelector('#productGrid').textContent.includes('Вода'));
+            doc.querySelector('#catalogBack').click();
+
+            win.closeDrawer('#supplyDrawer');
+            win.openTerminalFunctions();
+            check('functions-use-authorized-actions', !doc.querySelector('#terminalFunctions').classList.contains('hidden') && !!doc.querySelector('[data-function-target="supplyButton"]'));
+            doc.querySelector('#closeFunctions').click();
+            win.addProduct('p1'); win.openPayment('card');
+            await new Promise(resolve=>setTimeout(resolve,50));
+            check('checkout-opens-with-zero-amounts', ['cashReceived','cardReceived','qrReceived'].every(id=>Number(doc.getElementById(id).value)===0)&&doc.querySelector('#confirmPaymentButton').disabled&&!doc.querySelector('[data-payment-row].active'));
+            doc.querySelector('[data-method="cash"]').click();
+            check('checkout-click-fills-cash',Number(doc.querySelector('#cashReceived').value)===40&&!doc.querySelector('#confirmPaymentButton').disabled);
+            for (const key of ['5','0','0','.','5']) doc.querySelector(`[data-checkout-key="${key}"]`).click();
+            check('checkout-keypad-decimal', Number(doc.querySelector('#cashReceived').value) === 500.5 && !doc.querySelector('#confirmPaymentButton').disabled);
+            doc.querySelector('#cashReceived').value = 10;
+            doc.querySelector('#cashReceived').dispatchEvent(new win.Event('input',{bubbles:true}));
+            check('split-shows-remaining',doc.querySelector('#paymentRemaining').textContent.includes('30') && doc.querySelector('#confirmPaymentButton').disabled);
+            doc.querySelector('#cardReceived').dispatchEvent(new win.Event('focus'));
+            check('split-fills-remainder',Number(doc.querySelector('#cardReceived').value)===30 && Number(doc.querySelector('#cashReceived').value)===10);
+            doc.querySelector('#cardReceived').value = 20;
+            doc.querySelector('#cardReceived').dispatchEvent(new win.Event('input',{bubbles:true}));
+            check('card-edit-recalculates-cash',Number(doc.querySelector('#cashReceived').value)===20);
+            doc.querySelector('#qrReceived').dispatchEvent(new win.Event('focus'));
+            check('qr-focus-takes-automatic-remainder',Number(doc.querySelector('#qrReceived').value)===20&&Number(doc.querySelector('#cashReceived').value)===0);
+            doc.querySelector('#qrReceived').value=10;
+            doc.querySelector('#qrReceived').dispatchEvent(new win.Event('input',{bubbles:true}));
+            check('split-three-methods',Number(doc.querySelector('#qrReceived').value)===10 && !doc.querySelector('#confirmPaymentButton').disabled);
+            win.openPayment('card');
+            check('payment-shortcut-preserves-split',Number(doc.querySelector('#cashReceived').value)===10&&Number(doc.querySelector('#cardReceived').value)===20&&Number(doc.querySelector('#qrReceived').value)===10);
+            doc.querySelector('#qrReceived').value=50;win.updatePaymentState();
+            check('split-rejects-noncash-overpayment',doc.querySelector('#confirmPaymentButton').disabled&&!doc.querySelector('#paymentSplitError').classList.contains('hidden'));
+            doc.querySelector('#qrReceived').value=10;doc.querySelector('#cashReceived').value=50;win.updatePaymentState();
+            check('split-cash-change',doc.querySelector('#changeAmount').textContent.includes('40')&&!doc.querySelector('#confirmPaymentButton').disabled);
+            const splitSale={number:1,total:40,createdAt:new Date().toISOString(),payments:[{method:'cash',amount:10},{method:'card',amount:20},{method:'qr',amount:10}],items:[]};
+            const printed=win.CompanySettings.receiptHtml(splitSale,win.CompanySettings.normalize());
+            check('split-receipt-and-cash-accounting',printed.includes('Наличные')&&printed.includes('Карта')&&printed.includes('QR')&&win.salePaymentAmount(splitSale,'cash')===10);
+            win.closePayment(); win.startNewOrder();
+            frame.style.cssText = 'position:fixed;inset:0;width:1280px;height:800px;border:0';
+            win.eval('for(let i=0;i<60;i++) cart.set("layout-"+i,{id:"p1",cartKey:"layout-"+i,name:"Позиция "+i,price:40,quantity:1,available:100,unit:"шт"}); renderCart();');
+            const paymentRect = doc.querySelector('#payButton').getBoundingClientRect();
+            check('long-receipt-keeps-payment-visible', paymentRect.bottom <= 800 && doc.querySelector('#orderItems').scrollHeight > doc.querySelector('#orderItems').clientHeight);
+            check('receipt-left-catalog-right',doc.querySelector('.order-panel').getBoundingClientRect().left < doc.querySelector('.catalog-panel').getBoundingClientRect().left);
+            win.startNewOrder(); frame.style.left = '-10000px';
+            await win.openPosSupply();
+            doc.querySelector('#posSupplyInvoice').value = 'draft-check';
+            doc.querySelector('#posSupplyInvoice').dispatchEvent(new win.Event('input', {bubbles:true}));
+            win.closeDrawer('#supplyDrawer'); await win.openPosSupply();
+            check('supply-draft-restored', doc.querySelector('#posSupplyInvoice').value === 'draft-check');
+            win.sessionStorage.removeItem(win.supplyDraftKey()); win.closeDrawer('#supplyDrawer');
+            const settingsWorkspace = await win.AshkanaApi.workspace();
+            settingsWorkspace.state.companySettings = win.CompanySettings.normalize();
+            Object.assign(settingsWorkspace.state.companySettings.general, { currency: "KZT", servicePercent: 10, serviceDefault: true, roundTotal: true });
+            Object.assign(settingsWorkspace.state.companySettings.delivery, { enabled: true, areas: [{ name: "Центр", cost: 10, freeFrom: 0, minutes: 60 }] });
+            win.hydrateWorkspace(settingsWorkspace);
+            doc.querySelector("#posOrderType").value = "delivery";
+            doc.querySelector("#posOrderType").dispatchEvent(new win.Event("change", { bubbles: true }));
+            doc.querySelector("#posDeliveryArea").value = "Центр";
+            win.addProduct("p1");
+            check("company-settings-pos-total", win.cartTotal() === 54 && doc.querySelector("#totalAmount").textContent.includes("₸") && !doc.querySelector("#posDeliveryFields").classList.contains("hidden"));
+            doc.querySelector("#clearOrderButton").click();
+            check("new-order-clears-delivery", doc.querySelector("#posOrderType").value === "dine-in" && !doc.querySelector("#posDeliveryArea").value);
+            win.hydrateWorkspace(await win.AshkanaApi.workspace());
+            const variantWorkspace = await win.AshkanaApi.workspace();
+            variantWorkspace.state.products = [{id:'v1',name:'Сок — Яблоко',groupName:'Сок',variantName:'Яблоко',category:'Напитки',price:100,unit:'шт'}, {id:'v2',parentId:'v1',name:'Сок — Апельсин',groupName:'Сок',variantName:'Апельсин',category:'Напитки',price:120,unit:'шт'}];
+            variantWorkspace.state.logisticsState.branchStocks.b1 = {v1:5,v2:7};
+            win.hydrateWorkspace(variantWorkspace);win.renderWorkspace();
+            doc.querySelector('[data-category="Напитки"]').click();
+            check('variant-group-one-card',doc.querySelectorAll('[data-product-id="v1"]').length===1&&!doc.querySelector('#productGrid [data-product-id="v2"]'));
+            win.chooseProduct('v1');check('variant-dialog',doc.querySelector('#productVariantDialog').open&&doc.querySelectorAll('[data-select-variant]').length===2);
+            doc.querySelector('[data-select-variant="v2"]').click();check('variant-cart-price',win.cartTotal()===120&&!doc.querySelector('#productVariantDialog').open);
+            const ticket=win.kitchenOrderHtml({number:'1',branchId:'b1',items:[{id:'v2',name:'Сок — Апельсин',quantity:1,station:'Бар',destination:'Принтер бара'},{id:'v1',name:'Сок — Яблоко',quantity:1,station:'Бар',destination:'Без печати'}]});
+            check('station-ticket-routes',ticket.includes('Принтер бара')&&ticket.includes('Апельсин')&&!ticket.includes('Яблоко'));
+            win.startNewOrder();win.hydrateWorkspace(await win.AshkanaApi.workspace());
+            let unlocks = 0;
+            let closes = 0;
+            let submittedCash = null;
+            win.AshkanaApi.unlockPos = async (pin) => {
+              unlocks++;
+              if (pin !== "4821") throw new Error("Неверный PIN");
+              return authenticated;
+            };
+            win.AshkanaApi.closingShiftStock=async()=>({version:8,required:true,rows:[{lotId:'closing-lot',batchId:'closing-batch',name:'Плов',number:'АП-1',expectedWeight:1}]});
+            let closingPayload;
+            win.AshkanaApi.closePosShift = async (cash,stock) => { closingPayload=stock; closes++; submittedCash = cash; return { shift: { variance: 0 } }; };
+            await win.openShiftClose();
+            check('closing-prefills-book-stock',Number(doc.querySelector('[data-closing-lot] [data-actual]').value)===1);
+            doc.querySelector('[data-closing-lot] [data-actual]').value='';
+            await win.closeShift();
+            check('closing-requires-physical-count' ,closes===0);
+            doc.querySelector('[data-closing-lot] [data-actual]').value='0.9';
+            doc.querySelector('[data-closing-lot] [data-reason]').value='Недостача';
+            doc.querySelector('#shiftStockConfirmed').checked=true;
+            doc.querySelector("#closingCashInput").value = "4900";
+            await win.closeShift();
+            check("close-shift-uses-current-cashier", closes === 1 && unlocks === 0 && submittedCash === 4900 && doc.querySelector("#shiftCloseModal").classList.contains("hidden"));
+
+            check('closing-submits-count-and-version',closingPayload.stock_counts[0].actualWeight===.9&&closingPayload.state_version===8&&closingPayload.stock_confirmed);
+            win.AshkanaApi.closingShiftStock=async()=>({version:1,required:false,rows:[]});
+            win.activateOperator(authenticated.operator, authenticated.shift);
+            win.AshkanaApi.closePosShift = async () => { throw Object.assign(new Error("Выберите кассира и введите PIN"), { status: 423 }); };
+            await win.openShiftClose();
+            doc.querySelector("#closingCashInput").value = "4750";
+            await win.closeShift();
+            check("expired-session-opens-pin-only", doc.querySelector("#shiftCloseModal").classList.contains("hidden") && !doc.querySelector("#operatorStepPin").classList.contains("hidden") && !doc.querySelector("#operatorList") && doc.querySelector("#operatorLockTitle").textContent === "Введите ПИН-код");
+            for (const digit of "4821") win.enterPinDigit(digit);
+            await new Promise((resolve) => setTimeout(resolve, 50));
+            check("pin-restores-close-and-counted-cash", unlocks === 1 && !doc.querySelector("#shiftCloseModal").classList.contains("hidden") && doc.querySelector("#closingCashInput").value === "4750" && closes === 1);
+            win.AshkanaApi.closePosShift = async (cash) => { closes++; submittedCash = cash; return { shift: { variance: 0 } }; };
+            await win.closeShift();
+            check("close-after-pin-confirmation", closes === 2 && submittedCash === 4750 && doc.querySelector("#shiftCloseModal").classList.contains("hidden"));
+            check("shift-flow-no-runtime-errors", win.__runtimeErrors.length === 0);
+            win.startNewOrder();
+            const lotResponse=await win.AshkanaApi.workspace();
+            lotResponse.state.recipes[0].availableLots=[{id:'lot-a',line:'Первая витрина',batchNumber:'АП-1',responsibleName:'Айбек',available:3},{id:'lot-b',line:'Вторая витрина',batchNumber:'АП-2',responsibleName:'Алия',available:4}];
+            win.hydrateWorkspace(lotResponse);win.renderWorkspace();win.chooseProduct('r1');
+            check('lot-choice-required',doc.querySelector('#productVariantDialog').open&&doc.querySelectorAll('[data-select-lot]').length===2);
+            doc.querySelector('[data-select-lot="lot-b"]').click();win.chooseProduct('r1');doc.querySelector('[data-select-lot="lot-a"]').click();
+            check('same-dish-two-lots',win.cartTotal()===460&&doc.querySelectorAll('#orderItems .order-row').length===2);
+            win.hydrateWorkspace(lotResponse);win.renderCart();
+            check('lot-binding-survives-refresh',doc.querySelector('#orderItems').textContent.includes('Первая витрина')&&doc.querySelector('#orderItems').textContent.includes('Вторая витрина'));
+            let savedLots;
+            win.AshkanaApi.action=async(action,payload)=>{savedLots=payload.items;return lotResponse;};
+            await win.saveOpenOrder();
+            check('saved-order-preserves-lots',savedLots.length===2&&savedLots[0].lotId==='lot-b'&&savedLots[1].lotId==='lot-a');
+            win.hydrateWorkspace(await win.AshkanaApi.workspace());
+            const productionContext = {recipients:[{id:2,name:'Айбек'}],recipes:[{id:'r1',name:'Плов праздничный',yield:250,maxWeight:5}],batches:[{id:'k1',number:'АП-001',name:'Плов праздничный',yield:250,availableWeight:2}]};
+            win.AshkanaApi.posProductionContext = async () => productionContext;
+            win.activateOperator(authenticated.operator,authenticated.shift);
+            check('production-manager-button',!doc.querySelector('#productionButton').classList.contains('hidden'));
+            await win.openPosProduction();
+            check('production-open',!doc.querySelector('#productionDrawer').classList.contains('hidden'));
+            doc.querySelector('#productionItem').value='r1';
+            doc.querySelector('#productionUnit').value='portions';win.updateProductionQuantity();
+            doc.querySelector('#productionQuantity').value='4';
+            let productionCalls=[];
+            win.AshkanaApi.action=async(action,payload)=>{productionCalls.push({action,payload});return win.AshkanaApi.workspace();};
+            const cancelledTransfer=win.savePosProduction({preventDefault(){}});
+            check('production-awaits-confirmation',doc.querySelector('#productionConfirmDialog').open&&productionCalls.length===0&&!doc.querySelector('[data-production-available]'));
+            doc.querySelector('#productionConfirmDialog').close('cancel');doc.querySelector('#productionConfirmDialog').dispatchEvent(new win.Event('close'));await cancelledTransfer;
+            check('production-cancel-preserves-form',productionCalls.length===0&&doc.querySelector('#productionQuantity').value==='4');
+            const approvedTransfer=win.savePosProduction({preventDefault(){}});
+            doc.querySelector('#productionConfirmDialog').close('send');doc.querySelector('#productionConfirmDialog').dispatchEvent(new win.Event('close'));await approvedTransfer;
+            win.confirmProductionTransfer=async()=>true;
+            check('production-portions-convert',productionCalls[0].action==='batch.serve_many'&&productionCalls[0].payload.items[0].weight===1&&Boolean(productionCalls[0].payload.requestId));
+            check('production-success',doc.querySelector('#productionResult').textContent.includes('приёмку'));
+            doc.querySelector('#productionItem').value='r1';doc.querySelector('#productionUnit').value='kg';win.updateProductionQuantity();
+            doc.querySelector('#productionQuantity').value='0.5';
+            await win.savePosProduction({preventDefault(){}});
+            check('production-transfer',productionCalls[1].action==='batch.serve_many'&&productionCalls[1].payload.items[0].recipeId==='r1'&&productionCalls[1].payload.items[0].weight===0.5);
+            doc.querySelector('#productionQuantity').value='0.5';
+            win.AshkanaApi.action=async(action,payload)=>{productionCalls.push({action,payload});throw new Error('Недостаточно сырья');};
+            await win.savePosProduction({preventDefault(){}});
+            await win.savePosProduction({preventDefault(){}});
+            check('production-retry-safe',productionCalls[2].payload.requestId===productionCalls[3].payload.requestId&&doc.querySelector('#productionError').textContent==='Недостаточно сырья');
+            productionContext.recipes.push({id:'r2',name:'Суп',yield:300,maxWeight:4});
+            doc.querySelector('#addProductionLine').click();
+            let secondRow=doc.querySelectorAll('#productionLines .production-line')[1];
+            check('production-add-row',Boolean(secondRow));
+            check('production-dish-dropdown',!secondRow.querySelector('[data-production-search]')&&secondRow.querySelector('[data-production-item]').options.length===3);
+            secondRow.querySelector('[data-production-item]').value='r2';secondRow.querySelector('[data-production-unit]').value='portions';win.updateProductionQuantity();
+            secondRow.querySelector('[data-production-quantity]').value='2';
+            let many;
+            win.AshkanaApi.action=async(action,payload)=>{many={action,payload};return win.AshkanaApi.workspace();};
+            await win.savePosProduction({preventDefault(){}});
+            check('production-send-many',many?.action==='batch.serve_many'&&many.payload.items.length===2&&many.payload.items[1].weight===.6);
+            secondRow.querySelector('[data-remove-production]').click();
+            check('production-remove-row',doc.querySelectorAll('#productionLines .production-line').length===1);
+
+            win.activateOperator({...authenticated.operator,staffRole:'production',permissions:{posAccess:true,posCash:true,posRefunds:true}},null);
+            check('production-close-is-lock-button',!doc.querySelector('#closeProductionTerminal').classList.contains('hidden')&&doc.querySelector('#closeProductionTerminal').tagName==='BUTTON');
+            check('production-entry-gated',!doc.querySelector('#operatorLock').classList.contains('hidden'));
+            check('production-sales-hidden',doc.querySelector('.workspace').classList.contains('hidden')&&!doc.querySelector('#productionHome').classList.contains('hidden'));
+            check('production-supply-available',!doc.querySelector('#supplyButton').classList.contains('hidden'));
+            win.addProduct('p-1');win.openPayment();
+            check('production-payment-blocked',win.cartTotal()===0&&doc.querySelector('#paymentModal').classList.contains('hidden'));
+            productionContext.productionShift={shift:null,counts:[],ingredientStocks:[{id:'i1',name:'Рис',quantity:12.5,unit:'кг'},{id:'i2',name:'Молоко',quantity:3,unit:'л'}]};
+            await win.enterProductionShift();
+            check('production-automatic-shift-screen',!doc.querySelector('#productionShiftDrawer').classList.contains('hidden')&&doc.querySelector('#productionShiftTitle').textContent==='Принять смену');
+            check('kitchen-shift-open-prompt',doc.querySelector('#productionShiftButton').textContent==='Принять смену');
+            let shiftAction;
+            win.AshkanaApi.action=async(action,payload)=>{shiftAction=action;productionContext.productionShift.shift=action.endsWith('open')?{employeeId:authenticated.operator.id,employeeName:'Повар',openedAt:new Date().toISOString()}:null;return win.AshkanaApi.workspace();};
+            await win.openProductionShift();
+            check('kitchen-open-prefills-book-stock',Number(doc.querySelector('[data-ingredient-count="i1"] [data-actual]').value)===12.5&&Number(doc.querySelector('[data-ingredient-count="i2"] [data-actual]').value)===3);
+            const counted=doc.querySelector('[data-ingredient-count="i1"] [data-actual]'),reasonField=doc.querySelector('[data-ingredient-count="i1"] [data-reason]');
+            check('count-reason-initially-hidden',reasonField.classList.contains('hidden')&&!reasonField.required);
+            counted.value='11';counted.dispatchEvent(new win.Event('input',{bubbles:true}));
+            check('count-change-requires-reason',!reasonField.classList.contains('hidden')&&reasonField.required&&!reasonField.disabled);
+            reasonField.value='Уточнение';counted.value='12.5';counted.dispatchEvent(new win.Event('input',{bubbles:true}));
+            check('count-restored-hides-reason',reasonField.classList.contains('hidden')&&!reasonField.required&&reasonField.value==='');
+
+            doc.querySelector('#productionShiftSubmit').click();
+            await new Promise(resolve=>setTimeout(resolve,50));
+            check('kitchen-shift-opens',shiftAction==='production.shift.open'&&doc.querySelector('#productionShiftButton').textContent==='Закрыть смену');
+            let locks=0;
+            win.AshkanaApi.lockPos=async()=>{locks++;return {ok:true};};
+            doc.querySelector('#closeProductionTerminal').click();
+            await new Promise(resolve=>setTimeout(resolve,50));
+            check('production-close-opens-pin',locks===1&&!doc.querySelector('#operatorLock').classList.contains('hidden')&&!doc.querySelector('#operatorStepPin').classList.contains('hidden'));
+            check('production-lock-preserves-shift',Boolean(productionContext.productionShift.shift)&&shiftAction==='production.shift.open');
+            check('production-lock-no-admin-link',!doc.querySelector('#operatorAdminLink')&&doc.querySelector('#posAdminLink').classList.contains('hidden'));
+            win.activateOperator({...authenticated.operator,staffRole:'production'},null);
+            await win.enterProductionShift();
+            check('production-existing-shift-resumes',doc.querySelector('#operatorLock').classList.contains('hidden')&&doc.querySelector('#productionShiftDrawer').classList.contains('hidden'));
+
+            await win.openProductionShift();
+            check('kitchen-close-prefills-book-stock',Number(doc.querySelector('[data-ingredient-count="i1"] [data-actual]').value)===12.5&&Number(doc.querySelector('[data-ingredient-count="i2"] [data-actual]').value)===3);
+            const roundingCard=doc.createElement('div');
+            roundingCard.innerHTML='<input data-actual type="number" min="0" step="0.001" value="117.901">';
+            check('rounded-stock-preserves-accounting',win.productionCountValue(roundingCard,117.90079365079366)===117.90079365079366&&roundingCard.querySelector('input').checkValidity());
+            roundingCard.querySelector('input').value='117.5';
+            check('edited-stock-records-actual',win.productionCountValue(roundingCard,117.90079365079366)===117.5);
+            check('kitchen-close-shows-ingredient-stocks',doc.querySelector('#productionShiftTitle').textContent==='Закрыть смену'&&['Рис','12,5','кг','Молоко','3','л'].every(value=>doc.querySelector('#productionIngredientStocks').textContent.includes(value)));
+            doc.querySelectorAll('[data-ingredient-count] [data-actual]').forEach(input=>{input.value=input.closest('[data-ingredient-count]').dataset.ingredientCount==='i1'?'12.5':'3';});
+            doc.querySelector('#productionShiftSubmit').click();
+            await new Promise(resolve=>setTimeout(resolve,50));
+            check('kitchen-shift-closes',shiftAction==='production.shift.close'&&doc.querySelector('#productionShiftButton').textContent==='Принять смену');
+
+            win.activateOperator({...authenticated.operator,staffRole:'cashier',permissions:{production:false}},authenticated.shift);
+            check('production-cashier-denied',doc.querySelector('#productionButton').classList.contains('hidden')&&doc.querySelector('#productionDrawer').classList.contains('hidden'));
+            check('production-auto-destination',!doc.querySelector('#productionRecipient')&&!doc.querySelector('#productionLine'));
+            check('unconfirmed-old-stock-unavailable',win.availableRecipePortions({id:'r1',yield:380},'b1')===0);
+            win.renderProducts();
+            check('canteen-hides-unaccepted-dishes',!doc.querySelector('#productGrid [data-product-id="r1"]')&&!doc.querySelector('[data-category="Горячее"]'));
+            let incoming=[{id:'incoming-1',name:'Плов',weight:1,sender:'Повар',batchNumber:'АП-1'}];
+            win.AshkanaApi.posReceiving=async()=>({documents:incoming,version:100});
+            await win.refreshReceiving();
+            check('cashier-receiving-notification',!doc.querySelector('#receivingNotice').classList.contains('hidden')&&doc.querySelector('#receivingCount').textContent==='1');
+            await win.openReceiving();
+            let receivingAction;
+            win.AshkanaApi.action=async(action,payload)=>{receivingAction={action,payload};incoming=[];return win.AshkanaApi.workspace();};
+            doc.querySelector('#receivingList button[value="accept"]').click();
+            await new Promise(resolve=>setTimeout(resolve,50));
+            check('cashier-accepts-from-notification',receivingAction?.action==='pos.receiving.accept'&&receivingAction.payload.actualWeight===1);
+            await win.refreshReceiving();
+            check('receiving-notice-cleared',doc.querySelector('#receivingNotice').classList.contains('hidden'));
+            win.closeDrawer('#receivingDrawer');
+            win.AshkanaApi.posServingWriteoffs=async()=>({lots:[{id:'accepted-lot',batchId:'batch-1',batchNumber:'АП-1',name:'Плов',yield:250,availableWeight:2,responsibleName:'Кассир'}],documents:[]});
+            await win.openServingWriteoff();
+            check('cashier-writeoff-button',!doc.querySelector('#servingWriteoffButton').classList.contains('hidden')&&!doc.querySelector('#servingWriteoffDrawer').classList.contains('hidden'));
+            doc.querySelector('#servingWriteoffLot').value='accepted-lot';win.updateServingWriteoffQuantity();
+            doc.querySelector('#servingWriteoffQuantity').value='2';doc.querySelector('#servingWriteoffReason').value='Истёк срок хранения';
+            let writeoff;
+            win.AshkanaApi.action=async(action,payload)=>{writeoff={action,payload};return win.AshkanaApi.workspace();};
+            doc.querySelector('#servingWriteoffSubmit').click();await new Promise(resolve=>setTimeout(resolve,50));
+            check('cashier-writeoff-portions',writeoff?.action==='pos.serving.writeoff'&&writeoff.payload.weight===.5&&writeoff.payload.lotId==='accepted-lot'&&Boolean(writeoff.payload.requestId));
+            win.closeDrawer('#servingWriteoffDrawer');
+            win.AshkanaApi.posServingSurpluses=async()=>({lots:[{id:'empty-lot',batchId:'batch-1',batchNumber:'АП-1',name:'Плов',yield:250,availableWeight:0}],documents:[]});
+            await win.openServingSurplus();
+            check('surplus-zero-stock-selectable',doc.querySelector('#servingSurplusLot').textContent.includes('Плов')&&!doc.querySelector('#servingSurplusDrawer').classList.contains('hidden'));
+            doc.querySelector('#servingSurplusLot').value='empty-lot';win.updateSurplusForm();
+            doc.querySelector('#servingSurplusQuantity').value='2';doc.querySelector('#servingSurplusReason').value='Остались лишние порции';
+            let surplus;
+            win.AshkanaApi.action=async(action,payload)=>{surplus={action,payload};return win.AshkanaApi.workspace();};
+            doc.querySelector('#servingSurplusSubmit').click();await new Promise(resolve=>setTimeout(resolve,50));
+            check('surplus-portions-request',surplus?.action==='pos.serving.surplus'&&surplus.payload.weight===.5&&surplus.payload.lotId==='empty-lot'&&Boolean(surplus.payload.requestId));
+            win.closeDrawer('#servingSurplusDrawer');
+
+
+            win.activateOperator(authenticated.operator,authenticated.shift);
+            const restaurantResponse = await win.AshkanaApi.workspace();
+            restaurantResponse.state.serviceMode = 'restaurant';
+            restaurantResponse.state.logisticsState.batches = [];
+            restaurantResponse.state.recipes.forEach(recipe => recipe.availableToOrder = 7);
+            win.hydrateWorkspace(restaurantResponse);
+            win.startNewOrder(); win.renderProducts();
+            check('restaurant-no-production',doc.querySelector('#productionButton').classList.contains('hidden')&&doc.querySelector('#servingWriteoffButton').classList.contains('hidden'));
+            check('restaurant-no-surplus',doc.querySelector('#servingSurplusButton').classList.contains('hidden'));
+            check('restaurant-title', doc.querySelector('.catalog-toolbar h1').textContent === 'Новый заказ' && doc.querySelector('.brand span').textContent === 'Касса ресторана');
+            check('restaurant-empty-order', doc.querySelector('#orderItems').textContent.includes('Заказ пока пуст'));
+            win.addProduct('r1');
+            check('restaurant-without-production-batch', win.cartTotal() === 230);
+            doc.querySelector('[data-category="Горячее"]').click();
+            check('restaurant-menu-without-acceptance',Boolean(doc.querySelector('#productGrid [data-product-id="r1"]'))&&doc.querySelector('#receivingButton').classList.contains('hidden'));
+            const acceptedResponse=await win.AshkanaApi.workspace();acceptedResponse.state.serviceMode='canteen';acceptedResponse.state.recipes[0].availableLots=[{id:'accepted',available:2,line:'Раздача',batchNumber:'АП-1'}];win.hydrateWorkspace(acceptedResponse);win.renderProducts();
+            check('canteen-shows-after-acceptance',Boolean(doc.querySelector('#productGrid [data-product-id="r1"]'))&&Boolean(doc.querySelector('[data-category="Горячее"]')));
+            acceptedResponse.state.recipes[0].availableLots=[];win.hydrateWorkspace(acceptedResponse);win.renderProducts();
+            check('canteen-hides-exhausted-dish',!doc.querySelector('#productGrid [data-product-id="r1"]'));
+            win.startNewOrder();win.activateOperator(authenticated.operator,authenticated.shift);
+            const originalAction = win.AshkanaApi.action;
+            const printedSales = [];
+            win.printReceipt = sale => printedSales.push(sale.id);
+            for (const shouldPrint of [false,true]) {
+              win.addProduct('p1');win.openPayment();
+              doc.querySelector('[data-method="cash"]').click();
+              doc.querySelector('#checkoutPrintReceipt').checked=shouldPrint;
+              win.AshkanaApi.action = async () => {
+                const response=await win.AshkanaApi.workspace();
+                const sale={id:shouldPrint?'printed-sale':'silent-sale',number:30,total:40,paymentMethod:'cash',payments:[{method:'cash',amount:40}],createdAt:new Date().toISOString(),branchId:'b1',items:[]};
+                response.state.sales=[sale];response.entity={id:sale.id};return response;
+              };
+              await win.completePayment();
+              await new Promise(resolve=>setTimeout(resolve,120));
+              check(shouldPrint?'payment-prints-only-when-selected':'payment-without-print-or-popup',win.cartTotal()===0&&doc.querySelector('#paymentModal').classList.contains('hidden')&&!doc.querySelector('#successModal')&&printedSales.length===(shouldPrint?1:0)&&!doc.querySelector('#categories').classList.contains('hidden'));
+            }
+            win.addProduct('p1');win.openPayment();doc.querySelector('[data-method="cash"]').click();
+            const retryIds=[];
+            win.AshkanaApi.action=async(action,payload)=>{retryIds.push(payload.requestId);if(retryIds.length===1)throw new Error('Connection lost');const response=await win.AshkanaApi.workspace();const sale={id:'retry-sale',number:99,total:40,items:[],createdAt:new Date().toISOString()};response.state.sales=[sale];response.entity={id:sale.id};return response;};
+            await win.completePayment();
+            check('payment-retry-persists-request',Boolean(win.pendingPayment()?.payload.requestId));
+            await win.completePayment();
+            check('payment-retry-reuses-request',retryIds.length===2&&retryIds[0]===retryIds[1]&&!win.pendingPayment());
+            const archiveState=await win.AshkanaApi.workspace();
+            archiveState.state.sales=[{id:'archive-mixed',number:55,cashier:'Айбек',createdAt:new Date().toISOString(),total:80,payments:[{method:'cash',amount:30},{method:'card',amount:50}],items:[{name:'Чай',quantity:2,price:40,unit:'шт'}]},{id:'archive-refund',number:54,cashier:'Айбек',createdAt:new Date().toISOString(),refundedAt:new Date().toISOString(),refundReason:'Ошибка',total:40,paymentMethod:'qr',items:[{name:'Вода',quantity:1,price:40}]}];
+            win.hydrateWorkspace(archiveState);win.renderHistory();
+            check('archive-list-and-details',doc.querySelector('#historyList').textContent.includes('Чай')&&doc.querySelector('#archiveDetails').textContent.includes('Айбек')&&doc.querySelectorAll('#archiveDetails tbody tr').length===1);
+            doc.querySelector('[data-archive-filter="card"]').click();
+            check('archive-mixed-payment-filter',doc.querySelectorAll('[data-receipt-id]').length===1&&doc.querySelector('#archiveDetails').textContent.includes('50'));
+            doc.querySelector('[data-archive-filter="refund"]').click();
+            check('archive-refund-details',doc.querySelectorAll('[data-receipt-id]').length===1&&doc.querySelector('#archiveDetails').textContent.includes('Ошибка')&&!doc.querySelector('[data-refund-form]'));
+            doc.querySelector('#archiveSearch').value='missing';doc.querySelector('#archiveSearch').dispatchEvent(new win.Event('input'));
+            check('archive-empty-filter',!doc.querySelector('[data-receipt-id]')&&!doc.querySelector('#archivePrint'));
+            win.AshkanaApi.action=originalAction;
+            win.AshkanaApi.salesReport=async()=>({branch:'Тест',cashier:'Все кассиры',cashiers:[{id:'1',name:'Айбек'}],currency:'KGS',count:2,refundCount:0,gross:100,discount:10,sales:90,refunds:0,net:90,payments:{cash:30,card:60,qr:0},products:[{name:'Чай',unit:'шт',quantity:2,price:50,total:100}],xlsx:'UEs='});
+            await doc.querySelector('#salesReportButton').onclick();
+            check('sales-report-opens',!doc.querySelector('#salesReportModal').classList.contains('hidden')&&doc.querySelector('#reportCashier').options.length===2);
+            await doc.querySelector('#salesReportForm').onsubmit({preventDefault(){},submitter:doc.querySelector('#salesReportForm button')});
+            check('sales-report-preview-and-export',doc.querySelector('#salesReportResult').textContent.includes('Чай')&&!doc.querySelector('#salesReportActions').classList.contains('hidden'));
+            doc.querySelector('#reportFrom').dispatchEvent(new win.Event('input',{bubbles:true}));
+            check('sales-report-invalidates-old-export',doc.querySelector('#salesReportActions').classList.contains('hidden'));
+            const appearanceState=await win.AshkanaApi.workspace();
+            const photo='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII=';
+            appearanceState.state.serviceMode='restaurant';
+            appearanceState.state.recipes=[{id:999,name:'Блюдо с фото',category:'Оформление',price:100,yield:100,image:photo,color:'#123abc'}];
+            appearanceState.state.menuCategories=[{name:'Оформление',image:photo,color:'#aabbcc'}];
+            win.hydrateWorkspace(appearanceState);win.renderCategories();win.renderProducts();
+            const categoryButton=[...doc.querySelectorAll('[data-category]')].find(b=>b.dataset.category==='Оформление');
+            check('category-own-cover',!!categoryButton?.querySelector('img')&&categoryButton.style.getPropertyValue('--category-color')==='#aabbcc');
+            categoryButton.click();
+            check('recipe-photo-on-terminal',!!doc.querySelector('#productGrid .product-photo'));
+            frame.remove();
+          }
+        } catch (error) {
+          checks.push(`FAIL:runtime:${error.message}`);
+        }
+        document.querySelector("#results").textContent = checks.join("|");
+      }
+      run();
+    </script>
+  </body>
+</html>

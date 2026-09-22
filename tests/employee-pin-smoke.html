@@ -1,0 +1,6 @@
+<!doctype html><meta charset="utf-8"><pre id="results">RUNNING</pre><iframe id="app" src="../admin.html?test=1#employees"></iframe><script>
+app.onload=async()=>{const w=app.contentWindow,d=w.document,c=[];const check=(n,v)=>c.push(`${v?'PASS':'FAIL'}:${n}`);try{
+w.eval('employees=[{id:999,display_name:"Тест PIN",phone:"",login:"cashier",branch_id:branches[0].id,staff_role:"cashier",is_active:true,has_pin:true,can_reveal_pin:true}]');w.renderEmployees();
+w.AshkanaApi.revealEmployeePin=async()=>({pin:'4821',requires_reset:false});const button=d.querySelector('[data-employee-pin="999"]');check('hidden-in-list',!d.querySelector('[data-employee-pin-value]').textContent&&button.textContent==='Показать PIN');button.click();await new Promise(r=>setTimeout(r,10));check('reveal',d.querySelector('[data-employee-pin-value]').textContent==='4821');button.click();check('hide',!d.querySelector('[data-employee-pin-value]').textContent);
+w.eval('employees[0].can_reveal_pin=false');w.renderEmployees();d.querySelector('[data-employee-pin="999"]').click();check('legacy-reset-explicit',!d.querySelector('#employeeModal').classList.contains('hidden')&&d.querySelector('#employeePinInput').value==='');
+}catch(e){c.push('FAIL:'+e.stack)}results.textContent=c.join('|')};</script>

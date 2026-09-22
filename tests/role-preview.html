@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="ru">
+  <head><meta charset="utf-8"><title>Role preview</title></head>
+  <body>
+    <script>
+      const params = new URLSearchParams(location.search);
+      const role = params.get("role") || "owner";
+      const sessions = {
+        owner: { role: "owner", name: "Дастан", roleLabel: "Главный администратор", scope: "Все точки", initials: "ДА", route: "dashboard" },
+        branch: { role: "branch", name: "Столовая №1", roleLabel: "Управляющий точки", scope: "Столовая №1 — Манаса", initials: "М1", branchId: "b1", route: "inventory/supplies" }
+      };
+      const session = sessions[role] || sessions.owner;
+      if (params.get("route")) session.route = params.get("route");
+      sessionStorage.setItem("ashkana-auth-session-v1", JSON.stringify(session));
+      location.replace(`../admin.html?preview=${role}#${session.route}`);
+    </script>
+  </body>
+</html>

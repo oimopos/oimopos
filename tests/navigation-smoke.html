@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="ru">
+  <head><meta charset="utf-8"><title>Workspace navigation smoke test</title></head>
+  <body>
+    <pre id="results">RUNNING</pre>
+    <iframe id="app" src="../admin.html?test=1" style="position:fixed;left:-10000px;width:1900px;height:950px;border:0"></iframe>
+    <script>
+      document.querySelector("#app").addEventListener("load", () => {
+        const win = document.querySelector("#app").contentWindow;
+        const doc = win.document;
+        const checks = [];
+        const check = (name, condition) => checks.push(`${condition ? "PASS" : "FAIL"}:${name}`);
+        const click = (selector) => doc.querySelector(selector).click();
+        const visible = (selector) => win.getComputedStyle(doc.querySelector(selector)).display !== "none";
+        const noWorkspace = () => !doc.querySelector(".modal-backdrop:not(.hidden), .side-drawer-backdrop:not(.hidden)");
+        const salesKey = "ashkana-pos-sales";
+        const savedSales = win.localStorage.getItem(salesKey);
+        try {
+          check("getting-started-home", doc.querySelector("#view-dashboard h1").textContent === "Начало работы" && !doc.querySelector("#dashboardRevenue"));
+          win.localStorage.setItem(salesKey, "[]");
+          win.renderSetupGuide();
+          check("first-sale-pending", !doc.querySelector('#setupGuide [data-setup-route="pos"]').classList.contains("complete"));
+          const previousProgress = doc.querySelector("#setupProgressBar").value;
+          win.localStorage.setItem(salesKey, JSON.stringify([{ id: "navigation-receipt", number: 1, createdAt: new Date().toISOString(), branchId: "b1", total: 100, paymentMethod: "cash", items: [] }]));
+          win.switchView("dashboard");
+          check("first-sale-progress-refresh", doc.querySelector('#setupGuide [data-setup-route="pos"]').classList.contains("complete") && doc.querySelector("#setupProgressBar").value === previousProgress + 1);
+          for (const [route, view] of [["menu/recipes", "recipes"], ["inventory/supplies", "inventory"], ["employees", "employees"], ["registers", "registers"], ["menu/products", "recipes"], ["menu/ingredients", "recipes"], ["inventory/suppliers", "inventory"], ["inventory/overview", "inventory"], ["reports", "reports"]]) {
+            win.switchView("dashboard");
+            click(`#view-dashboard [data-setup-route="${route}"]`);
+            check(`setup-route-${route}`, visible(`#view-${view}`) && !visible("#view-dashboard"));
+          }
+          win.switchView("dashboard");
+          click("#dashboardOrdersButton");
+          check("receipt-history-opens", visible("#view-reports") && visible("#analytics-pane-receipts"));
+          click('[data-nav-section="stock"]');
+          click('[data-owner-stock-tab="overview"]');
+          check("receipt-history-to-stock", visible("#view-inventory") && !visible("#view-reports") && noWorkspace());
+
+          for (const [selector, view] of [
+            ['[data-nav-section="stock"]', "inventory"],
+            ['[data-nav-section="menu"]', "recipes"],
+            ['[data-nav-section="finance"]', "finance"],
+            ['[data-nav-section="access"]', "registers"],
+            ['[data-role-navigation="owner"] [data-view="dashboard"]', "dashboard"],
+            ['[data-owner-analytics-tab="sales"]', "reports"],
+            ['[data-nav-section="analytics"]', "reports"],
+          ]) {
+            click("#dashboardOrdersButton");
+            click('[data-receipt-open="navigation-receipt"]');
+            check(`receipt-details-open-${view}`, visible("#receiptModal"));
+            click(selector);
+            check(`receipt-details-to-${view}`, noWorkspace() && visible(`#view-${view}`));
+          }
+          win.openIngredientForm();
+          click('[data-nav-section="stock"]');
+          check("editor-to-stock", noWorkspace() && visible("#view-inventory"));
+          win.openRecipe(201);
+          click('[data-owner-stock-tab="overview"]');
+          check("drawer-to-stock-submenu", noWorkspace() && visible("#view-inventory"));
+        } catch (error) {
+          checks.push(`FAIL:runtime:${error.message}`);
+        } finally {
+          if (savedSales === null) win.localStorage.removeItem(salesKey);
+          else win.localStorage.setItem(salesKey, savedSales);
+        }
+        document.querySelector("#results").textContent = checks.join("|");
+      }, { once: true });
+    </script>
+  </body>
+</html>

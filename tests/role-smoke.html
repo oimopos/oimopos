@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="ru">
+  <head><meta charset="utf-8"><title>Role workspace smoke test</title></head>
+  <body>
+    <div id="results">WAIT</div>
+    <iframe id="loginFrame" src="../login.html" style="display:none"></iframe>
+    <iframe id="app" style="display:none"></iframe>
+    <script>
+      const results = [];
+      const check = (name, condition) => results.push(`${condition ? "PASS" : "FAIL"}:${name}`);
+      const roles = [
+        { role: "branch", name: "Столовая №1", roleLabel: "Управляющий точки", scope: "Столовая №1 — Манаса", initials: "М1", branchId: "b1", route: "inventory/supplies" },
+        { role: "owner", name: "Дастан", roleLabel: "Главный администратор", scope: "Все точки", initials: "ДА", route: "dashboard" }
+      ];
+      const app = document.querySelector("#app");
+      let roleIndex = 0;
+
+      function finish() {
+        document.querySelector("#results").textContent = results.join("|");
+      }
+
+      function loadNextRole() {
+        if (roleIndex >= roles.length) { finish(); return; }
+        const session = roles[roleIndex];
+        app.src = `../admin.html?test=1&role=${session.role}&rolecheck=${roleIndex}#${session.route}`;
+      }
+
+      app.addEventListener("load", () => {
+        const session = roles[roleIndex];
+        const win = app.contentWindow;
+        const doc = app.contentDocument;
+        try {
+          check(`${session.role}-navigation`, !doc.querySelector(`[data-role-navigation="${session.role}"]`).classList.contains("hidden"));
+          check(`${session.role}-no-warehouse-role`, !doc.querySelector('[data-role-navigation="warehouse"]') && !doc.body.textContent.toLowerCase().includes("центральный склад"));
+          if (session.role === "branch") {
+            check("branch-no-sales-dashboard", !doc.querySelector("#view-dashboard") && !doc.querySelector("#dashboardRevenue"));
+            check("branch-default-supplies", doc.querySelector("#stockPageTitle").textContent === "Поставки" && !doc.querySelector("#documentActionButton").classList.contains("hidden"));
+            const routes = [...doc.querySelectorAll('[data-role-navigation="branch"] [data-role-route]')].map((button) => button.dataset.roleRoute);
+            check("branch-stock-routes", routes.join(",") === "inventory/supplies,inventory/point-transfers,inventory/writeoff,inventory/overview,inventory/inventories,inventory/movement,inventory/suppliers");
+            check("branch-manages-own-access", Boolean(doc.querySelector('[data-view="employees"]')) && Boolean(doc.querySelector('[data-view="registers"]')));
+            win.switchView("employees");
+            doc.querySelector("#addEmployeeButton").click();
+            check("manager-employee-scope", doc.querySelector("#employeeBranchInput").disabled && doc.querySelector("#employeeBranchInput").value === "b1" && ![...doc.querySelectorAll("#employeeRoleInput option")].some((option) => option.value === "branch_manager"));
+            doc.querySelector("#employeeModal").classList.add("hidden");
+            win.switchView("registers");
+            doc.querySelector("#addRegisterButton").click();
+            check("manager-register-scope", doc.querySelector("#registerBranchInput").disabled && doc.querySelector("#registerBranchInput").value === "b1" && doc.querySelector("#registersPointName").textContent.includes("Манаса"));
+            doc.querySelector("#registerModal").classList.add("hidden");
+            win.openSupplyForm();
+            check("branch-create-supply", !doc.querySelector("#supplyModal").classList.contains("hidden") && doc.querySelectorAll("#supplySupplier option").length >= 1 && doc.querySelector("#supplyWarehouse").value === "b1");
+            doc.querySelector("#supplyModal").classList.add("hidden");
+            win.routeRoleWorkspace("inventory/overview");
+            check("branch-own-stock", doc.querySelector("#stockPageTitle").textContent === "Остатки точки" && doc.querySelector("#stockWarehouseFilter").value.includes("Манаса") && doc.querySelector("#stockTable").textContent.includes("Вода 0,5 л"));
+            win.routeRoleWorkspace("inventory/point-transfers");
+            check("branch-point-transfers", doc.querySelector("#stockPageTitle").textContent === "Между точками" && !doc.querySelector("#documentActionButton").classList.contains("hidden"));
+            doc.querySelector("#documentActionButton").click();
+            check("branch-transfer-needs-second-point", doc.querySelector("#pointTransferModal").classList.contains("hidden") && doc.querySelector("#adminToast").textContent.includes("вторую точку"));
+            win.routeRoleWorkspace("inventory/inventories");
+            check("branch-inventories", doc.querySelector("#stockPageTitle").textContent === "Инвентаризации" && !doc.querySelector("#documentActionButton").classList.contains("hidden"));
+            doc.querySelector("#documentActionButton").click();
+            check("branch-inventory-setup", !doc.querySelector("#inventoryModal").classList.contains("hidden") && !doc.querySelector("#inventorySetup").classList.contains("hidden") && doc.querySelector("#inventoryWarehouse").value === "b1");
+            doc.querySelector("#inventoryModal").classList.add("hidden");
+            win.routeRoleWorkspace("inventory/suppliers");
+            check("branch-suppliers", doc.querySelector("#stockPageTitle").textContent === "Поставщики" && Boolean(doc.querySelector("#addSupplierButton")));
+          }
+          if (session.role === "owner") {
+            check("owner-dashboard", doc.querySelector("#view-dashboard").classList.contains("active"));
+            check("owner-one-point", doc.querySelectorAll("#branchCards .branch-card").length === 1 && doc.querySelector("#branchCards").textContent.includes("Манаса"));
+            check("owner-account-access", !doc.querySelector("#objectSwitcher") && !doc.querySelector("#applyObjectButton") && Boolean(doc.querySelector('[data-owner-access-view="registers"]')));
+            win.routeRoleWorkspace("inventory/overview");
+            check("owner-network-stock", doc.querySelector("#stockPageTitle").textContent === "Остатки сети" && doc.querySelector("#stockWarehouseFilter").value === "Вся сеть");
+            win.routeRoleWorkspace("inventory/supplies");
+            check("owner-manages-supplies", doc.querySelector("#stockPageTitle").textContent === "Поставки" && !doc.querySelector("#documentActionButton").classList.contains("hidden"));
+            win.routeRoleWorkspace("inventory/suppliers");
+            check("owner-suppliers", doc.querySelector("#stockPageTitle").textContent === "Поставщики" && Boolean(doc.querySelector("#addSupplierButton")));
+            win.openSupplierForm();
+            check("owner-supplier-account-scope", doc.querySelector(".supplier-location-section").classList.contains("hidden"));
+            doc.querySelector("#supplierModal").classList.add("hidden");
+            const tabs = [...doc.querySelectorAll("[data-stock-tab]")].map((button) => button.dataset.stockTab);
+            check("owner-stock-tabs", tabs.join(",") === "overview,supplies,point-transfers,writeoff,inventories,movement,suppliers");
+            win.routeRoleWorkspace("inventory/point-transfers");
+            check("owner-point-transfer-control", doc.querySelector("#stockPageTitle").textContent === "Перемещения между точками" && doc.querySelector("#documentActionButton").classList.contains("hidden"));
+            win.routeRoleWorkspace("inventory/inventories");
+            check("owner-inventory-control", doc.querySelector("#stockPageTitle").textContent === "Инвентаризации точек" && doc.querySelector("#documentActionButton").classList.contains("hidden"));
+          }
+        } catch (error) {
+          results.push(`FAIL:${session.role}-runtime:${error.message}`);
+        }
+        roleIndex += 1;
+        loadNextRole();
+      });
+
+      document.querySelector("#loginFrame").addEventListener("load", () => {
+        const loginDoc = document.querySelector("#loginFrame").contentDocument;
+        check("login-secure-form", Boolean(loginDoc.querySelector("#loginForm")) && Boolean(loginDoc.querySelector("#passwordInput")) && !loginDoc.querySelector("[data-demo-login]"));
+        check("login-no-warehouse", !loginDoc.body.textContent.toLowerCase().includes("центральный склад") && !loginDoc.querySelector('[data-demo-login="sklad"]'));
+        loadNextRole();
+      });
+    </script>
+  </body>
+</html>

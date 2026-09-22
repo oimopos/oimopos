@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="ru">
+  <head><meta charset="utf-8"><title>SaaS smoke test</title></head>
+  <body>
+    <div id="results">RUNNING</div>
+    <iframe id="platformFrame" src="../platform.html?v=45" style="display:none"></iframe>
+    <script>
+      const checks = [];
+      const check = (name, condition) => checks.push(`${condition ? "PASS" : "FAIL"} ${name}`);
+      Promise.all([
+        fetch("../platform.html?v=45").then((response) => response.text()),
+        fetch("../platform.js?v=45").then((response) => response.text()),
+        fetch("../api-client.js?v=45").then((response) => response.text()),
+        fetch("../login.html?v=45").then((response) => response.text()),
+      ]).then(([platformHtml, platformSource, apiSource, loginHtml]) => {
+        check("separate-platform-portal", platformHtml.includes('id="tenantTable"') && platformHtml.includes('id="tenantForm"'));
+        check("poster-onboarding-steps", ["tenantName", "tenantOwnerEmail", "tenantPhone", "tenantBusinessType", "tenantLocationName", "tenantLocationAddress", "tenantRegisterPassword"].every((id) => platformHtml.includes(`id="${id}"`)) && platformHtml.includes('data-tenant-step="3"'));
+        check("separate-account-location", platformSource.includes("location_name") && platformSource.includes("location_address") && platformSource.includes("register_password"));
+        check("tenant-api-client", apiSource.includes("createTenant") && apiSource.includes("updateTenantOwner") && apiSource.includes("platformEvents"));
+        check("platform-role-guard", platformSource.includes('role !== "platform_owner"'));
+        check("password-not-persisted", !platformSource.includes("localStorage") && platformSource.includes("currentCredentials = null"));
+        check("saas-login-copy", loginHtml.includes("Владелец платформы") && loginHtml.includes("Администратор компании"));
+        check("consistent-svg-icons", platformHtml.includes('id="icon-organizations"') && platformHtml.includes('id="icon-settings"') && loginHtml.includes('id="icon-lock"') && !/[◇≡↪＋]/.test(platformHtml));
+        check("plan-usage-visualization", platformSource.includes("usage-track") && platformSource.includes("tenantTableCount"));
+        document.querySelector("#results").textContent = checks.join("\n");
+        document.body.dataset.done = "true";
+      }).catch((error) => {
+        document.querySelector("#results").textContent = `FAIL ${error.message}`;
+        document.body.dataset.done = "true";
+      });
+    </script>
+  </body>
+</html>

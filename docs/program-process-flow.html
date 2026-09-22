@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Oimo — процесс от заказа поставщику до продажи</title>
+    <style>
+      @page { size: A4 landscape; margin: 0; }
+      @media screen { body.preview-page2 #page1 { display: none; } }
+      * { box-sizing: border-box; }
+      html, body { margin: 0; padding: 0; color: #25343b; background: #e9edef; font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .page { position: relative; width: 297mm; height: 210mm; padding: 11mm 13mm 9mm; overflow: hidden; background: #f7f8fa; page-break-after: always; }
+      .page:last-child { page-break-after: auto; }
+      .top { display: flex; align-items: center; justify-content: space-between; gap: 10mm; }
+      .brand { display: flex; align-items: center; gap: 4mm; }
+      .logo { width: 11mm; height: 11mm; display: grid; place-items: center; border-radius: 2.6mm; color: #fff; background: #6549d5; font-size: 15pt; font-weight: 900; box-shadow: 0 2mm 5mm rgba(101,73,213,.2); }
+      .brand h1 { margin: 0; font-size: 18pt; line-height: 1.05; letter-spacing: -.4pt; }
+      .brand p { margin: 1.4mm 0 0; color: #6f7e85; font-size: 7.6pt; }
+      .version { padding: 2.4mm 3.3mm; border: .25mm solid #dfe5e7; border-radius: 2mm; color: #5e6e75; background: #fff; font-size: 7pt; text-align: right; line-height: 1.45; }
+      .version strong { display: block; color: #26363d; font-size: 8pt; }
+      .setup { margin-top: 4mm; padding: 2.7mm 3.4mm; display: flex; align-items: center; gap: 3mm; border: .25mm solid #dcd6f7; border-radius: 2.4mm; background: #f1eeff; }
+      .setup b { color: #5940c3; font-size: 7.6pt; }
+      .setup span { color: #615b7a; font-size: 7pt; }
+      .setup-items { margin-left: auto; display: flex; gap: 1.5mm; }
+      .setup i { padding: 1.25mm 2mm; border-radius: 4mm; color: #5845a8; background: #fff; font-size: 6.5pt; font-style: normal; font-weight: 700; }
+      .legend { margin: 3mm 0 2.7mm; display: flex; align-items: center; gap: 4.5mm; color: #68777e; font-size: 6.5pt; }
+      .legend strong { color: #33434a; }
+      .legend span { display: flex; align-items: center; gap: 1.5mm; }
+      .legend i { width: 2.4mm; height: 2.4mm; border-radius: 50%; }
+      .admin-dot { background: #6549d5; }.point-dot { background: #25855c; }.cash-dot { background: #2f9eb3; }.system-dot { background: #d98a27; }
+      .flow-row { display: grid; grid-template-columns: 1fr 8mm 1fr 8mm 1fr 8mm 1fr; align-items: stretch; }
+      .arrow { display: grid; place-items: center; color: #9ca8ad; font-size: 16pt; }
+      .flow-card { --role: #25855c; position: relative; min-height: 43mm; padding: 4mm 3.5mm 3mm; overflow: hidden; border: .25mm solid #dde3e6; border-top: 1.2mm solid var(--role); border-radius: 2.6mm; background: #fff; box-shadow: 0 1.5mm 4mm rgba(31,48,56,.055); }
+      .flow-card::after { content: ""; position: absolute; right: -9mm; bottom: -10mm; width: 25mm; height: 25mm; border-radius: 50%; background: color-mix(in srgb, var(--role) 8%, white); }
+      .flow-card.admin { --role: #6549d5; }.flow-card.point { --role: #25855c; }.flow-card.cash { --role: #2f9eb3; }.flow-card.system { --role: #d98a27; }
+      .card-top { position: relative; z-index: 1; display: flex; align-items: center; justify-content: space-between; gap: 2mm; }
+      .step { width: 7mm; height: 7mm; display: grid; place-items: center; border-radius: 50%; color: #fff; background: var(--role); font-size: 8pt; font-weight: 900; }
+      .role { padding: 1mm 1.8mm; border-radius: 4mm; color: var(--role); background: color-mix(in srgb, var(--role) 10%, white); font-size: 5.8pt; font-weight: 800; letter-spacing: .15pt; text-transform: uppercase; }
+      .flow-card h2 { position: relative; z-index: 1; margin: 2.8mm 0 1.6mm; font-size: 9.2pt; line-height: 1.15; }
+      .flow-card p { position: relative; z-index: 1; min-height: 8mm; margin: 0; color: #66767d; font-size: 6.5pt; line-height: 1.42; }
+      .result { position: relative; z-index: 1; margin-top: 2.2mm; padding-top: 2mm; border-top: .25mm solid #edf0f1; color: #45565d; font-size: 6.2pt; line-height: 1.35; }
+      .result b { color: var(--role); }
+      .turn { height: 8mm; display: grid; grid-template-columns: repeat(4, 1fr); column-gap: 8mm; }
+      .turn div { grid-column: 4; display: flex; align-items: center; justify-content: center; color: #9ca8ad; font-size: 16pt; }
+      .controls { margin-top: 3.5mm; display: grid; grid-template-columns: 1.1fr 1fr 1fr; gap: 2.5mm; }
+      .control { min-height: 23mm; padding: 3mm 3.4mm; border: .25mm solid #e0e5e7; border-radius: 2.3mm; background: #fff; }
+      .control strong { display: block; margin-bottom: 1.5mm; font-size: 7.4pt; }
+      .control p { margin: 0; color: #67777e; font-size: 6.3pt; line-height: 1.45; }
+      .control.rule { border-color: #ecd5a9; background: #fff7e8; }.control.rule strong { color: #a66a1e; }
+      .control.access { border-color: #cfe7db; background: #edf8f2; }.control.access strong { color: #257953; }
+      .control.audit { border-color: #dcd6f7; background: #f4f1ff; }.control.audit strong { color: #5a43bd; }
+      .footer { position: absolute; right: 13mm; bottom: 4.2mm; left: 13mm; display: flex; justify-content: space-between; color: #89969b; font-size: 5.8pt; }
+      .page-title { margin: 4mm 0 3mm; display: flex; align-items: flex-end; justify-content: space-between; }
+      .page-title h2 { margin: 0; font-size: 15pt; }.page-title p { margin: 0; color: #75838a; font-size: 7pt; }
+      .role-strip { display: grid; grid-template-columns: repeat(4, 1fr); gap: 2.5mm; }
+      .role-box { --role: #25855c; padding: 2.8mm 3mm; border: .25mm solid #e0e5e7; border-left: 1.2mm solid var(--role); border-radius: 2.2mm; background: #fff; }
+      .role-box.admin { --role: #6549d5; }.role-box.branch { --role: #25855c; }.role-box.supplier { --role: #d98a27; }.role-box.cashier { --role: #2f9eb3; }
+      .role-box strong { display: block; color: var(--role); font-size: 7.5pt; }.role-box span { display: block; margin-top: 1mm; color: #69787f; font-size: 6.2pt; line-height: 1.35; }
+      .matrix { width: 100%; margin-top: 3mm; border-collapse: separate; border-spacing: 0; overflow: hidden; border: .25mm solid #dfe5e7; border-radius: 2.3mm; background: #fff; font-size: 6.1pt; }
+      .matrix th { height: 8mm; padding: 0 2.2mm; color: #68777e; background: #f1f4f5; font-size: 5.8pt; letter-spacing: .2pt; text-align: left; text-transform: uppercase; }
+      .matrix td { height: 11.4mm; padding: 1.7mm 2.2mm; border-top: .25mm solid #e8edef; vertical-align: middle; line-height: 1.35; }
+      .matrix td:first-child { width: 9mm; color: #6549d5; font-size: 9pt; font-weight: 900; text-align: center; }
+      .matrix td:nth-child(2) { width: 31mm; font-weight: 800; }.matrix td:nth-child(3) { width: 56mm; }.matrix td:nth-child(4) { width: 86mm; }.matrix td:nth-child(5) { width: 47mm; }
+      .matrix b { color: #26363d; }.matrix small { display: block; color: #77858b; font-size: 5.6pt; }
+      .plus { color: #25855c; font-weight: 900; }.minus { color: #ca4c59; font-weight: 900; }.neutral { color: #2f8091; font-weight: 900; }
+      .bottom-notes { margin-top: 3mm; display: grid; grid-template-columns: 1.25fr 1fr; gap: 2.5mm; }
+      .status-flow, .important { min-height: 22mm; padding: 3mm 3.4mm; border-radius: 2.3mm; }
+      .status-flow { border: .25mm solid #dcd6f7; background: #f4f1ff; }.important { border: .25mm solid #cfe7db; background: #edf8f2; }
+      .status-flow strong, .important strong { display: block; margin-bottom: 2mm; font-size: 7pt; }
+      .status-line { display: flex; align-items: center; gap: 2mm; }
+      .status-line span { padding: 1.3mm 2.4mm; border-radius: 4mm; color: #5943b3; background: #fff; font-size: 6.2pt; font-weight: 800; }.status-line i { color: #9b91c4; font-style: normal; }
+      .important p { margin: 0; color: #3f715b; font-size: 6.3pt; line-height: 1.45; }
+    </style>
+  </head>
+  <body>
+    <section class="page" id="page1">
+      <header class="top">
+        <div class="brand"><div class="logo">o</div><div><h1>От поставки до продажи</h1><p>Схема движения продуктов, денег и документов в программе «Oimo»</p></div></div>
+        <div class="version"><strong>Учёт поставок по модели Poster</strong>Рабочий процесс · 19 сентября 2026</div>
+      </header>
+      <div class="setup"><b>До начала работы администратор аккаунта настраивает:</b><span>заведения, кассы, сотрудников и рабочие справочники</span><div class="setup-items"><i>Ингредиенты и товары</i><i>Единицы и лимиты</i><i>Поставщики</i><i>Техкарты и цены</i></div></div>
+      <div class="legend"><strong>Ответственный:</strong><span><i class="admin-dot"></i> Главный администратор</span><span><i class="point-dot"></i> Столовая</span><span><i class="cash-dot"></i> Касса</span><span><i class="system-dot"></i> Автоматический расчёт</span></div>
+
+      <div class="flow-row">
+        <article class="flow-card admin"><div class="card-top"><span class="step">1</span><span class="role">Администратор</span></div><h2>Поставщик</h2><p>В общем справочнике аккаунта создаётся карточка поставщика с контактами, адресом и реквизитами.</p><div class="result"><b>Результат:</b> поставщик доступен при оформлении поставки в любом заведении.</div></article>
+        <div class="arrow">→</div>
+        <article class="flow-card point"><div class="card-top"><span class="step">2</span><span class="role">Кладовщик</span></div><h2>Приходная поставка</h2><p>Сотрудник выбирает склад и поставщика, вводит дату, номер накладной и весь список фактически полученных продуктов.</p><div class="result"><b>Одна накладная:</b> несколько позиций, количество и закупочная цена каждой.</div></article>
+        <div class="arrow">→</div>
+        <article class="flow-card system"><div class="card-top"><span class="step">3</span><span class="role">Система</span></div><h2>Остаток и себестоимость</h2><p>После проведения продукты сразу поступают на склад выбранного заведения.</p><div class="result"><b>Автоматически:</b> остаток <span class="plus">+</span> и новая средневзвешенная цена.</div></article>
+        <div class="arrow">→</div>
+        <article class="flow-card system"><div class="card-top"><span class="step">4</span><span class="role">Финансы</span></div><h2>Оплата или долг</h2><p>Оплату можно пропустить, внести частично или разбить между несколькими финансовыми счетами.</p><div class="result"><b>Автоматически:</b> движение денег и остаток долга поставщику.</div></article>
+      </div>
+      <div class="turn"><div>↓</div></div>
+      <div class="flow-row">
+        <article class="flow-card cash"><div class="card-top"><span class="step">8</span><span class="role">Касса</span></div><h2>Порционная продажа</h2><p>Кассир добавляет гостю порции, принимает наличные, карту или QR и закрывает чек.</p><div class="result"><b>Фиксируется:</b> чек, кассир, способ оплаты, выручка и проданные порции.</div></article>
+        <div class="arrow">←</div>
+        <article class="flow-card point"><div class="card-top"><span class="step">7</span><span class="role">Раздача</span></div><h2>Выдача и закрытие</h2><p>На раздаче блюдо выдают порциями, затем вводят фактический остаток партии в килограммах.</p><div class="result"><b>Из кассы:</b> проданные порции подставляются автоматически и не редактируются.</div></article>
+        <div class="arrow">←</div>
+        <article class="flow-card system"><div class="card-top"><span class="step">6</span><span class="role">Система</span></div><h2>Расчёт порций</h2><p>Программа делит переданную массу на норму выхода из техкарты и показывает доступные порции.</p><div class="result"><b>Формула:</b> вес на раздаче ÷ выход одной порции.</div></article>
+        <div class="arrow">←</div>
+        <article class="flow-card point"><div class="card-top"><span class="step">5</span><span class="role">Кухня</span></div><h2>Производство в килограммах</h2><p>Кухня выбирает блюдо и указывает фактический вес приготовленной партии.</p><div class="result"><b>Автоматически:</b> сырьё склада <span class="minus">−</span> по техкарте, создаётся акт выпуска.</div></article>
+      </div>
+
+      <div class="controls">
+        <div class="control rule"><strong>Когда меняется остаток</strong><p>Товар появляется сразу после проведения поставки. Расхождение инвентаризации меняет остаток только после подтверждения документа.</p></div>
+        <div class="control access"><strong>Основной маршрут снабжения</strong><p>Поставщик → приходная накладная → склад заведения. Передача между складами оформляется отдельным перемещением.</p></div>
+        <div class="control audit"><strong>Оплата не равна себестоимости</strong><p>Платёж уменьшает деньги на счёте, а себестоимость признаётся по проданным блюдам и товарам.</p></div>
+      </div>
+      <footer class="footer"><span>Oimo · схема операционного процесса</span><span>Страница 1 из 2</span></footer>
+    </section>
+
+    <section class="page" id="page2">
+      <header class="top"><div class="brand"><div class="logo">o</div><div><h1>Действия сотрудников и результат</h1><p>Практическая памятка: где работать и что меняется в учёте</p></div></div><div class="version"><strong>Один аккаунт — заведения, кассы и сотрудники</strong>Каждый склад ведёт собственный остаток</div></header>
+      <div class="page-title"><h2>Роли и границы доступа</h2><p>Каждый отвечает только за свой участок процесса</p></div>
+      <div class="role-strip">
+        <div class="role-box admin"><strong>Главный администратор</strong><span>Настраивает справочники, видит поставки и долги, подтверждает корректировки инвентаризации.</span></div>
+        <div class="role-box branch"><strong>Столовая №1 — Манаса</strong><span>Принимает поставки на свой склад, проводит подсчёт, готовит и передаёт блюда на раздачу.</span></div>
+        <div class="role-box supplier"><strong>Поставщик</strong><span>Привозит продукты и передаёт заведению товарную накладную.</span></div>
+        <div class="role-box cashier"><strong>Кассир</strong><span>Формирует заказ гостя, принимает оплату, закрывает чек и фиксирует проданные порции.</span></div>
+      </div>
+
+      <table class="matrix">
+        <thead><tr><th>№</th><th>Кто</th><th>Где в программе</th><th>Действие сотрудника</th><th>Что меняется</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td>Администратор или кладовщик</td><td><b>Склад → Поставщики</b><small>«+ Добавить поставщика»</small></td><td>Создаёт общую карточку компании, контакты, адрес и реквизиты.</td><td><span class="neutral">Справочник аккаунта</span><small>Доступен в каждом заведении</small></td></tr>
+          <tr><td>2</td><td>Ответственный сотрудник</td><td><b>Склад → Поставки</b><small>«+ Добавить поставку»</small></td><td>Выбирает склад, поставщика и дату; переносит все строки фактической накладной.</td><td><span class="plus">Остаток склада +</span><small>Документ проведён сразу</small></td></tr>
+          <tr><td>3</td><td>Система</td><td><b>Поставка</b><small>После проведения</small></td><td>Пересчитывает средневзвешенную цену каждой принятой позиции.</td><td><span class="neutral">Новая себестоимость</span><small>Отдельно для склада заведения</small></td></tr>
+          <tr><td>4</td><td>Ответственный сотрудник</td><td><b>Поставка → Оплата</b><small>Необязательно</small></td><td>Выбирает финансовый счёт и сумму; допускаются частичная оплата и несколько платежей.</td><td><span class="minus">Деньги со счёта −</span><small>Остаток становится долгом</small></td></tr>
+          <tr><td>5</td><td>Кухня заведения</td><td><b>Производство</b><small>«Выпустить»</small></td><td>Выбирает блюдо и указывает фактический вес приготовленной партии в килограммах.</td><td><span class="minus">Сырьё склада −</span><small>По нормам техкарты</small></td></tr>
+          <tr><td>6</td><td>Ответственный раздачи</td><td><b>Производство</b><small>«На раздачу»</small></td><td>Передаёт вес в кг, фиксирует температуру, линию/мармит и принявшего сотрудника.</td><td><span class="neutral">Партия «На раздаче»</span><small>Расчёт доступных порций</small></td></tr>
+          <tr><td>7</td><td>Кассир</td><td><b>Касса</b><small>«Оплатить»</small></td><td>Добавляет порции в чек, выбирает наличные, банковскую карту или QR и подтверждает оплату.</td><td><span class="plus">Продажа и выручка +</span><small>Оплаченный чек</small></td></tr>
+          <tr><td>8</td><td>Ответственный сотрудник</td><td><b>Производство</b><small>«Закрыть»</small></td><td>Вводит остаток в кг и выбирает возврат или списание; проданные порции приходят из POS.</td><td><span class="neutral">Партия закрыта</span><small>Остаток и отклонение массы</small></td></tr>
+          <tr><td>9</td><td>Кладовщик</td><td><b>Инвентаризации</b><small>«Начать инвентаризацию»</small></td><td>Считает фактические остатки; администратор проверяет и проводит расхождения.</td><td><span class="neutral">Контроль склада</span><small>Корректировка после проведения</small></td></tr>
+        </tbody>
+      </table>
+
+      <div class="bottom-notes">
+        <div class="status-flow"><strong>Статус расчёта по поставке</strong><div class="status-line"><span>Не оплачена</span><i>→</i><span>Частично оплачена</span><i>→</i><span>Оплачена</span></div></div>
+        <div class="important"><strong>Контроль остатков</strong><p>Перемещение разделено между получателем, согласующим и отправителем. Инвентаризация корректирует остаток выбранного склада после проведения документа.</p></div>
+      </div>
+      <footer class="footer"><span>Oimo · памятка по работе программы</span><span>Страница 2 из 2</span></footer>
+    </section>
+    <script>if (new URLSearchParams(location.search).get("preview") === "2") document.body.classList.add("preview-page2");</script>
+  </body>
+</html>

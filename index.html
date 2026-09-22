@@ -1,0 +1,417 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Oimo POS — касса заведения</title>
+    <link rel="stylesheet" href="styles.css?v=receipt-scroll-50" />
+    <link rel="stylesheet" href="minimal.css?v=sales-report-26" />
+      <link rel="stylesheet" href="oimo.css?v=8" />
+  </head>
+  <body data-ui="pos">
+    <svg class="ui-icon-sprite" aria-hidden="true">
+      <symbol id="pos-receipt" viewBox="0 0 24 24"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2V3Zm3 5h6m-6 4h6m-6 4h4"/></symbol>
+      <symbol id="pos-settings" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-2.8 2.8-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6v.2h-4V21a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1L4.2 17l.1-.1a1.7 1.7 0 0 0 .3-1.9A1.7 1.7 0 0 0 3 14H2.8v-4H3a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9L4.2 7 7 4.2l.1.1a1.7 1.7 0 0 0 1.9.3A1.7 1.7 0 0 0 10 3V2.8h4V3a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1L19.8 7l-.1.1a1.7 1.7 0 0 0-.3 1.9 1.7 1.7 0 0 0 1.6 1h.2v4H21a1.7 1.7 0 0 0-1.6 1Z"/></symbol>
+      <symbol id="pos-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></symbol>
+      <symbol id="pos-close" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></symbol>
+      <symbol id="pos-tray" viewBox="0 0 24 24"><path d="M3 18h18M5 18a7 7 0 0 1 14 0M12 8V5m-2 0h4"/></symbol>
+      <symbol id="pos-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+      <symbol id="pos-card" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18M7 15h3"/></symbol>
+      <symbol id="pos-cash" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="12" cy="12" r="3"/><path d="M7 8H6v1m11-1h1v1M7 16H6v-1m11 1h1v-1"/></symbol>
+      <symbol id="pos-qr" viewBox="0 0 24 24"><path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h2m4 0v2m-6 4h2m2-4h2v4h-4v-2"/></symbol>
+      <symbol id="pos-check" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m8 12 2.5 2.5L16 9"/></symbol>
+      <symbol id="pos-orders" viewBox="0 0 24 24"><path d="M6 4h12v16H6zM9 8h6m-6 4h6m-6 4h4"/></symbol>
+      <symbol id="pos-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></symbol>
+      <symbol id="pos-wallet" viewBox="0 0 24 24"><path d="M4 6h15a2 2 0 0 1 2 2v10H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h13v2m0 5h4v4h-4a2 2 0 0 1 0-4Z"/></symbol>
+      <symbol id="pos-pause" viewBox="0 0 24 24"><path d="M8 5v14m8-14v14"/></symbol>
+      <symbol id="pos-supply" viewBox="0 0 24 24"><path d="M3 7h11v10H3zM14 10h4l3 3v4h-7zM6 17a2 2 0 1 0 4 0m6 0a2 2 0 1 0 4 0M6 11h5"/></symbol>
+    </svg>
+    <div class="app-shell">
+      <header class="topbar">
+        <div class="brand">
+          <div class="brand-mark">o</div>
+          <div>
+            <b>Oimo POS</b>
+            <span>Касса заведения</span>
+          </div>
+        </div>
+
+        <label class="branch-picker">
+          <span>Заведение</span>
+          <select id="branchSelect" disabled><option>Загрузка точки…</option></select>
+        </label>
+
+        <button class="shift-chip" id="shiftButton" type="button" title="Кассовая смена">
+          <span class="status-dot"></span>
+          <div>
+            <strong id="shiftStatus">Смена не открыта</strong>
+            <small id="shiftCaption">загрузка…</small>
+          </div>
+        </button>
+
+        <button class="topbar-action" id="openOrdersButton" type="button">
+          <svg class="ui-icon"><use href="#pos-orders"/></svg>
+          Заказы <span class="topbar-counter hidden" id="openOrdersCount">0</span>
+        </button>
+        <button class="topbar-action hidden" id="receivingButton" type="button">Приёмка <span id="receivingCount" class="topbar-counter">0</span></button>
+        <button class="topbar-action hidden" id="servingSurplusButton" type="button">Излишек на раздаче</button>
+        <button class="topbar-action hidden" id="servingWriteoffButton" type="button">Списание</button>
+        <button class="topbar-action hidden" id="productionButton" type="button"><svg class="ui-icon"><use href="#pos-tray"/></svg>На раздачу</button>
+        <button class="topbar-action hidden" id="supplyButton" type="button">
+          <svg class="ui-icon"><use href="#pos-supply"/></svg>
+          Поставка
+        </button>
+        <button class="topbar-action" id="historyButton" type="button">
+          <svg class="ui-icon"><use href="#pos-receipt"/></svg>
+          Чеки
+        </button>
+        <button class="topbar-action" id="cashMenuButton" type="button">
+          <svg class="ui-icon"><use href="#pos-wallet"/></svg>
+          Касса
+        </button>
+        <a class="topbar-action admin-link" id="posAdminLink" href="admin.html?v=54">
+          <svg class="ui-icon"><use href="#pos-settings"/></svg>
+          Админка
+        </a>
+        <button class="cashier" id="cashierButton" type="button" title="Сменить кассира">
+          <span id="cashierInitials">—</span>
+          <div>
+            <strong id="cashierName">Загрузка…</strong>
+            <small id="cashierActionCaption">Сменить кассира</small>
+          </div>
+        </button>
+        <button class="topbar-action hidden" id="closeProductionTerminal" type="button" title="Заблокировать терминал и перейти к ПИН-коду">Закрыть терминал</button>
+        <button class="topbar-action" id="terminalFunctionsButton" type="button" aria-label="Функции терминала">☰ Функции</button><time class="clock" id="clock">--:--</time>
+      </header>
+
+      <section id="productionHome" class="production-home hidden">
+        <p class="eyebrow">Рабочее место кухни</p>
+        <h1>Производство и раздача</h1>
+        <p class="production-home-intro">Готовьте, передавайте блюда и принимайте поставки. Все движения сохраняются в журнале.</p>
+        <div class="production-shift-strip"><div><strong id="productionShiftStatus">Проверяем смену…</strong><p id="productionShiftCaption"></p></div><button id="productionShiftButton" class="topbar-action" type="button">Смена производства</button></div>
+        <div class="production-home-actions">
+          <button class="production-action-card" type="button" onclick="openPosProduction()"><svg class="ui-icon"><use href="#pos-tray"/></svg><strong>Передать на раздачу</strong><span>Выберите блюдо и количество — касса получит уведомление</span><b aria-hidden="true">→</b></button>
+          <button class="production-action-card" type="button" onclick="openPosSupply()"><svg class="ui-icon"><use href="#pos-supply"/></svg><strong>Принять поставку</strong><span>Добавьте ингредиенты на склад по накладной</span><b aria-hidden="true">→</b></button>
+        </div>
+      </section>
+      <main class="workspace">
+        <section class="catalog-panel">
+          <div class="catalog-toolbar">
+            <div>
+              <p class="eyebrow">Новый заказ</p>
+              <h1>Что на подносе?</h1>
+            </div>
+            <label class="search-box">
+              <svg class="ui-icon"><use href="#pos-search"/></svg>
+              <input id="searchInput" type="search" placeholder="Найти блюдо или ввести код" autocomplete="off" />
+            </label>
+          </div>
+
+          <div class="catalog-navigation"><button id="catalogBack" class="secondary-button hidden" type="button">← Назад к категориям</button><strong id="catalogCategoryTitle">Категории</strong></div>
+          <nav class="categories" id="categories" aria-label="Категории блюд"></nav>
+
+          <div class="catalog-meta">
+            <span id="catalogCount">0 позиций</span>
+            <span class="hint">Нажмите на блюдо, чтобы добавить</span>
+          </div>
+
+          <div class="product-grid" id="productGrid"></div>
+        </section>
+
+        <aside class="order-panel">
+          <div class="order-header">
+            <div>
+              <p class="eyebrow">Текущий чек</p>
+              <h2 id="orderTitle">Заказ №1</h2>
+            </div>
+            <button class="icon-button danger" id="clearOrderButton" type="button" title="Очистить заказ" aria-label="Очистить заказ"><svg class="ui-icon"><use href="#pos-close"/></svg></button>
+          </div>
+
+          <div class="order-context">
+            <button class="order-context-button" id="customerButton" type="button">
+              <svg class="ui-icon"><use href="#pos-user"/></svg>
+              <span><small>Гость</small><strong id="customerName">Не выбран</strong></span>
+              <b id="customerDiscount"></b>
+            </button>
+            <button class="order-context-button" id="saveOrderButton" type="button">
+              <svg class="ui-icon"><use href="#pos-pause"/></svg>
+              <span><small>Отложить</small><strong>Сохранить заказ</strong></span>
+            </button>
+          </div>
+
+          <button class="kitchen-order-action" id="sendKitchenOrderButton" type="button">Сохранить и напечатать по цехам</button>
+          <div class="pos-order-settings" id="posOrderSettings">
+            <label>Тип заказа<select id="posOrderType"><option value="dine-in">В заведении</option><option value="takeaway">С собой</option></select></label>
+            <label class="hidden" id="posTableField">Стол<select id="posOrderTable"></select></label>
+            <div class="hidden pos-delivery-fields" id="posDeliveryFields"><label>Район<select id="posDeliveryArea"></select></label><label>Адрес<input id="posDeliveryAddress" maxlength="250" placeholder="Улица, дом, квартира"></label><label>Телефон<input id="posDeliveryPhone" type="tel" maxlength="50"></label></div>
+            <label class="hidden pos-service-option" id="posServiceField"><input id="posApplyService" type="checkbox">Обслуживание <span id="posServicePercent"></span></label>
+          </div>
+          <div class="order-items" id="orderItems">
+            <div class="empty-order">
+              <div class="tray-icon"><svg class="ui-icon"><use href="#pos-tray"/></svg></div>
+              <strong>Поднос пока пуст</strong>
+              <span>Выберите блюда в каталоге справа</span>
+            </div>
+          </div>
+
+          <div class="order-footer">
+            <label class="order-comment"><span>Комментарий</span><input id="orderComment" type="text" maxlength="240" placeholder="Например, без лука" /></label>
+            <div class="discount-line hidden" id="discountLine"><span>Скидка гостя</span><strong id="discountAmount">− 0 сом</strong></div>
+            <div class="discount-line hidden" id="posExtraTotal"><span>Обслуживание и доставка</span><strong id="posExtraAmount"></strong></div>
+            <div class="totals">
+              <div><span>Позиций</span><strong id="itemCount">0</strong></div>
+              <div class="grand-total"><span>К оплате</span><strong id="totalAmount">0 сом</strong></div>
+            </div>
+            <button class="pay-button" id="payButton" type="button" disabled>
+              <span>Оплатить</span>
+              <strong id="payButtonAmount">0 сом</strong>
+            </button>
+          </div>
+        </aside>
+      </main>
+    </div>
+
+    <div class="modal-backdrop hidden" id="terminalFunctions" role="dialog" aria-modal="true" aria-labelledby="functionsTitle">
+      <section class="modal functions-modal"><div class="modal-header"><h2 id="functionsTitle">Функции</h2><button class="icon-button" id="closeFunctions" type="button" aria-label="Закрыть">×</button></div>
+      <button type="button" id="salesReportButton">Отчёт по продажам</button><h3>Учёт и операции</h3><div class="function-grid" id="functionOperations"></div>
+      <h3>Терминал</h3><div class="function-grid"><button type="button" id="functionSettings">Настройки и печать</button><button type="button" id="functionSync">Обновить данные</button><button type="button" id="functionLock">Закрыть терминал · ПИН</button></div></section>
+    </div>
+    <div class="modal-backdrop hidden" id="salesReportModal" role="dialog" aria-modal="true" aria-labelledby="salesReportTitle">
+      <section class="modal sales-report-modal"><header class="modal-header"><h2 id="salesReportTitle">Отчёт по продажам</h2><button type="button" class="icon-button" id="closeSalesReport" aria-label="Закрыть">×</button></header>
+      <form id="salesReportForm" class="sales-report-filters"><label>Начиная с<input id="reportFrom" type="datetime-local" required></label><label>Заканчивая<input id="reportTo" type="datetime-local" required></label><label>Кассир<select id="reportCashier"><option value="">Все кассиры</option></select></label><label class="report-products"><input id="reportProducts" type="checkbox" checked> Продажи по товарам</label><button type="submit" class="primary-button">Составить отчёт</button></form>
+      <p id="reportError" role="alert"></p><div id="salesReportResult"></div><footer id="salesReportActions" class="hidden"><button type="button" id="reportPrint">Распечатать</button><button type="button" id="reportExcel" class="primary-button">Сохранить Excel</button></footer></section>
+    </div>
+    <div class="modal-backdrop hidden" id="paymentModal" role="dialog" aria-modal="true" aria-labelledby="paymentTitle">
+      <section class="modal payment-modal">
+        <div class="modal-header">
+          <div>
+            <p class="eyebrow">Завершение продажи</p>
+            <h2 id="paymentTitle">Принять оплату</h2>
+          </div>
+          <button class="icon-button" data-close-modal type="button" aria-label="Закрыть"><svg class="ui-icon"><use href="#pos-close"/></svg></button>
+        </div>
+        <div class="checkout-keyboard"><div id="checkoutQuickCash"></div><div id="checkoutKeypad"></div></div>
+        <div class="checkout-details"><div class="amount-due">
+          <span>Сумма к оплате</span>
+          <strong id="modalTotal">0 сом</strong>
+        </div>
+        <p class="checkout-hint">Укажите суммы: можно сочетать наличные, карту и QR. Нажмите на способ, чтобы заполнить остаток.</p>
+        <div class="payment-methods" id="paymentMethods">
+          <div class="payment-method active" data-payment-row="cash"><button data-method="cash" type="button">Наличные</button><input id="cashReceived" data-payment-input="cash" aria-label="Сумма наличными" type="number" min="0" step="0.01" inputmode="decimal" value="0"><span>сом</span></div>
+          <div class="payment-method" data-payment-row="card"><button data-method="card" type="button">Карта</button><input id="cardReceived" data-payment-input="card" aria-label="Сумма картой" type="number" min="0" step="0.01" inputmode="decimal" value="0"><span>сом</span></div>
+          <div class="payment-method" data-payment-row="qr"><button data-method="qr" type="button">QR</button><input id="qrReceived" data-payment-input="qr" aria-label="Сумма QR" type="number" min="0" step="0.01" inputmode="decimal" value="0"><span>сом</span></div>
+        </div>
+        <div class="cash-section" id="cashSection"><div class="quick-cash" id="quickCash"></div>
+          <div class="change-line"><span>Осталось оплатить</span><strong id="paymentRemaining">0 сом</strong></div>
+          <div class="change-line"><span>Сдача наличными</span><strong id="changeAmount">0 сом</strong></div>
+          <p class="pin-error hidden" id="paymentSplitError"></p>
+        </div>
+        <label class="checkout-print"><input id="checkoutPrintReceipt" type="checkbox">Напечатать чек</label>
+        <button class="confirm-payment" id="confirmPaymentButton" type="button">Подтвердить оплату</button></div>
+      </section>
+    </div>
+
+    <div class="drawer-backdrop hidden" id="historyDrawer">
+      <aside class="history-drawer" role="dialog" aria-modal="true" aria-labelledby="archiveTitle">
+        <header class="archive-header"><button id="closeHistoryButton" type="button">← Назад</button><h2 id="archiveTitle">Архив чеков</h2></header>
+        <div class="archive-toolbar"><div id="archiveFilters" role="group" aria-label="Фильтр чеков"><button data-archive-filter="all" class="active" type="button">Все чеки</button><button data-archive-filter="cash" type="button">Наличные</button><button data-archive-filter="card" type="button">Карта</button><button data-archive-filter="qr" type="button">QR</button><button data-archive-filter="refund" type="button">Возвраты</button></div><input id="archiveSearch" type="search" aria-label="Поиск чеков" placeholder="Номер или блюдо"><input id="archiveDate" type="date" aria-label="Дата чеков"><button id="archiveAllDates" type="button">Все даты</button></div>
+        <div class="archive-body"><div class="archive-sidebar"><div class="history-list" id="historyList"></div><footer class="archive-summary"><span>Чеков: <b id="salesCount">0</b></span><strong id="salesTotal">0 сом</strong></footer></div><section id="archiveDetails" class="archive-details" aria-live="polite"></section></div>
+      </aside>
+    </div>
+
+    <div class="drawer-backdrop hidden" id="openOrdersDrawer">
+      <aside class="poster-drawer">
+        <div class="modal-header"><div><p class="eyebrow">Заказы</p><h2>Открытые чеки</h2></div><button class="icon-button" id="closeOpenOrdersButton" type="button" aria-label="Закрыть"><svg class="ui-icon"><use href="#pos-close"/></svg></button></div>
+        <p class="drawer-help">Отложенные заказы доступны кассирам этой точки. Откройте заказ, чтобы продолжить продажу.</p>
+        <div class="open-orders-list" id="openOrdersList"></div>
+      </aside>
+    </div>
+
+    <div class="drawer-backdrop hidden" id="customerDrawer">
+      <aside class="poster-drawer">
+        <div class="modal-header"><div><p class="eyebrow">Текущий чек</p><h2>Гость и скидка</h2></div><button class="icon-button" id="closeCustomerButton" type="button" aria-label="Закрыть"><svg class="ui-icon"><use href="#pos-close"/></svg></button></div>
+        <label class="drawer-search"><svg class="ui-icon"><use href="#pos-search"/></svg><input id="customerSearch" type="search" placeholder="Имя или телефон" /></label>
+        <button class="drawer-neutral-action" id="clearCustomerButton" type="button">Продолжить без гостя</button>
+        <div class="customer-list" id="customerList"></div>
+        <form class="drawer-form" id="customerForm">
+          <header><strong>Новый гость</strong><small>Скидка будет применена к текущему чеку</small></header>
+          <label><span>Имя</span><input id="newCustomerName" required maxlength="120" /></label>
+          <label><span>Телефон</span><input id="newCustomerPhone" required maxlength="40" placeholder="+996 ..." /></label>
+          <label><span>Скидка, %</span><input id="newCustomerDiscount" type="number" min="0" max="100" step="1" value="0" /></label>
+          <button class="terminal-primary" type="submit">Добавить и применить</button>
+        </form>
+      </aside>
+    </div>
+
+    <div class="drawer-backdrop hidden" id="cashDrawer">
+      <aside class="poster-drawer cash-drawer">
+        <div class="modal-header"><div><p class="eyebrow">Кассовая смена</p><h2>Операции по кассе</h2></div><button class="icon-button" id="closeCashDrawerButton" type="button" aria-label="Закрыть"><svg class="ui-icon"><use href="#pos-close"/></svg></button></div>
+        <div class="cash-shift-summary">
+          <div><span>Продажи</span><strong id="shiftSalesTotal">0 сом</strong></div>
+          <div><span>Наличные в кассе</span><strong id="shiftExpectedTotal">0 сом</strong></div>
+          <div><span>Чеков</span><strong id="shiftReceiptCount">0</strong></div>
+        </div>
+        <div class="cash-actions">
+          <button data-cash-action="deposit" type="button"><b>Внесение</b><span>Добавить наличные в ящик</span></button>
+          <button data-cash-action="expense" type="button"><b>Расход</b><span>Оплатить расход из кассы</span></button>
+          <button data-cash-action="collection" type="button"><b>Инкассация</b><span>Изъять выручку из ящика</span></button>
+        </div>
+        <form class="drawer-form hidden" id="cashOperationForm">
+          <header><strong id="cashOperationTitle">Внесение</strong><small>Операция попадёт в отчёт текущей смены</small></header>
+          <input id="cashOperationType" type="hidden" />
+          <label><span>Сумма</span><div class="money-field"><input id="cashOperationAmount" type="number" min="1" step="1" required /><b>сом</b></div></label>
+          <label><span>Комментарий</span><input id="cashOperationComment" maxlength="240" placeholder="Основание операции" /></label>
+          <div class="drawer-form-actions"><button class="secondary-button" id="cancelCashOperation" type="button">Отмена</button><button class="terminal-primary" type="submit">Провести</button></div>
+        </form>
+        <section class="cash-movement-section"><header><strong>Операции смены</strong><button id="printXReportButton" type="button">Печать X‑отчёта</button></header><div id="cashMovementList"></div></section>
+        <button class="drawer-neutral-action" id="openTerminalSettingsButton" type="button">Настройки терминала и печати</button>
+        <button class="close-shift-action" id="openShiftCloseButton" type="button">Закрыть смену</button>
+      </aside>
+    </div>
+
+    <div class="drawer-backdrop hidden" id="productionShiftDrawer"><aside class="poster-drawer" role="dialog" aria-modal="true" aria-labelledby="productionShiftTitle"><header><h2 id="productionShiftTitle">Смена производства</h2><button class="icon-button" type="button" onclick="closeProductionShiftScreen()" aria-label="Закрыть">×</button></header><p class="production-hint">Остатки ингредиентов по учёту склада кухни.</p><form id="productionShiftForm"><h3>Остатки ингредиентов</h3><div id="productionIngredientStocks"></div><section id="productionPreparedStocks"><h3>Готовые блюда на кухне</h3><p id="productionShiftStockTotal" class="shift-stock-caption"></p><div id="productionShiftCounts"></div></section><p id="productionShiftError" role="alert"></p><button id="productionShiftSubmit" class="pay-button" type="submit">Принять смену</button></form></aside></div>
+    <div class="drawer-backdrop hidden" id="servingSurplusDrawer">
+      <aside class="poster-drawer surplus-drawer" role="dialog" aria-modal="true" aria-labelledby="servingSurplusTitle">
+        <header class="modal-header"><h2 id="servingSurplusTitle">Излишек на раздаче</h2><button class="icon-button" type="button" onclick="closeDrawer('#servingSurplusDrawer')" aria-label="Закрыть">×</button></header>
+        <div class="surplus-body"><form id="servingSurplusForm"><fieldset id="servingSurplusFields">
+          <label>Блюдо и партия<select id="servingSurplusLot" required></select></label>
+          <div class="production-quantity"><label>Дополнительное количество<input id="servingSurplusQuantity" type="number" min="1" step="1" required inputmode="decimal"></label><label>Единица<select id="servingSurplusUnit"><option value="portions">порции / шт.</option><option value="kg">кг</option></select></label></div>
+          <label>Причина<input id="servingSurplusReason" required minlength="3" maxlength="500" placeholder="Например, передали больше порций"></label>
+        </fieldset><p id="servingSurplusError" role="alert"></p></form>
+        <p class="surplus-note">Добавится в продажу после подтверждения руководителя.</p>
+        <details class="surplus-history"><summary>Заявки и решения</summary><div id="servingSurplusHistory"></div></details></div>
+        <footer class="transfer-footer"><button class="terminal-primary" id="servingSurplusSubmit" type="submit" form="servingSurplusForm">Отправить руководителю</button></footer>
+      </aside>
+    </div>
+    <div class="drawer-backdrop hidden" id="servingWriteoffDrawer"><aside class="poster-drawer" role="dialog" aria-modal="true" aria-labelledby="servingWriteoffTitle"><header class="modal-header"><div><p class="eyebrow">Раздача</p><h2 id="servingWriteoffTitle">Списание блюд</h2></div><button class="icon-button" type="button" onclick="closeDrawer('#servingWriteoffDrawer')" aria-label="Закрыть">×</button></header><p class="production-hint">Количество сразу исключается из продажи. Окончательное списание подтверждает руководитель.</p><form id="servingWriteoffForm" class="receiving-card"><fieldset id="servingWriteoffFields"><label>Блюдо и партия<select id="servingWriteoffLot" required></select></label><p id="servingWriteoffAvailable" class="production-hint"></p><div class="production-quantity"><label>Количество<input id="servingWriteoffQuantity" type="number" required min="0.001" step="0.001" inputmode="decimal"></label><label>Единица<select id="servingWriteoffUnit"><option value="portions">порции / шт.</option><option value="kg">кг</option></select></label></div><label>Причина<select id="servingWriteoffReason" required><option value="">Выберите причину</option><option>Истёк срок хранения</option><option>Порча блюда</option><option>Брак приготовления</option><option>Остаток в конце дня</option><option>Другая причина</option></select></label><label>Комментарий<textarea id="servingWriteoffComment" maxlength="300" placeholder="Уточните обстоятельства списания"></textarea></label></fieldset><p id="servingWriteoffError" role="alert"></p><button class="pay-button" id="servingWriteoffSubmit" type="submit">Отправить на подтверждение</button></form><h3>Заявки на списание</h3><div id="servingWriteoffHistory"></div></aside></div>
+    <div id="receivingNotice" class="receiving-notice hidden" role="status"><span>С кухни поступили блюда. Подтвердите приёмку, чтобы начать продажу.</span><button type="button" onclick="openReceiving()">Посмотреть</button></div>
+    <div class="drawer-backdrop hidden" id="receivingDrawer"><aside class="poster-drawer" role="dialog" aria-modal="true" aria-labelledby="receivingTitle"><header class="modal-header"><h2 id="receivingTitle">Приёмка</h2><button class="icon-button" type="button" onclick="closeDrawer('#receivingDrawer')" aria-label="Закрыть">×</button></header><p id="receivingError" role="alert"></p><div id="receivingList"></div></aside></div>
+    <dialog id="productionConfirmDialog" class="transfer-confirm">
+      <form method="dialog"><h2>Отправить на раздачу?</h2><p id="productionConfirmSummary"></p><div><button class="secondary-button" value="cancel" autofocus>Не отправлять</button><button class="terminal-primary" value="send">Отправить</button></div></form>
+    </dialog>
+    <div class="drawer-backdrop hidden" id="productionDrawer">
+      <aside class="poster-drawer production-drawer" role="dialog" aria-modal="true" aria-labelledby="productionTitle">
+        <header class="modal-header"><h2 id="productionTitle">Передача на раздачу</h2><button class="icon-button" id="closeProductionButton" type="button" aria-label="Закрыть">×</button></header>
+        <form id="posProductionForm">
+          <fieldset id="productionFields">
+            <p id="productionHelp" class="hidden"></p>
+            <div id="productionLines"></div>
+          </fieldset>
+          <p id="productionError" role="alert"></p>
+          <p id="productionResult" role="status"></p>
+          <div class="transfer-footer"><button id="addProductionLine" class="secondary-button" type="button">＋ Добавить блюдо</button><p id="productionSummary" aria-live="polite"></p><button id="saveProductionButton" class="pay-button" type="submit">Передать на раздачу</button></div>
+        </form>
+      </aside>
+    </div>
+
+    <div class="drawer-backdrop hidden" id="supplyDrawer">
+      <aside class="poster-drawer supply-drawer">
+        <div class="modal-header"><h2>Поставка</h2><button class="icon-button" id="closeSupplyButton" type="button" aria-label="Закрыть"><svg class="ui-icon"><use href="#pos-close"/></svg></button></div>
+        <div class="supply-scroll-body"><form id="posSupplyForm">
+          <div class="supply-meta-grid">
+            <label><span>Дата и время</span><input id="posSupplyDate" type="datetime-local" required /></label>
+            <label><span>Поставщик</span><select id="posSupplySupplier" required></select></label>
+            <label><span>Накладная №</span><input id="posSupplyInvoice" maxlength="80" placeholder="—" /></label>
+          </div>
+          <div class="supply-lines-head"><span>Наименование</span><span>Количество</span><span>Цена</span><span>Сумма</span><span></span></div>
+          <div class="supply-lines" id="posSupplyLines"></div>
+          <button class="add-supply-line" id="addPosSupplyLine" type="button"><svg class="ui-icon"><use href="#pos-plus"/></svg>Добавить позицию</button>
+          <section class="supply-payment-box">
+            <span id="posSupplyTotal" class="hidden">0 сом</span>
+            <div class="supply-payment-grid">
+              <label><span>Оплата</span><select id="posSupplyPaymentMode"><option value="unpaid">Не оплачено</option><option value="paid">Оплачено полностью</option><option value="partial">Частичная оплата</option></select></label>
+              <label class="hidden" id="posSupplyAccountField"><span>Счёт оплаты</span><select id="posSupplyAccount"></select></label>
+              <label class="hidden" id="posSupplyPaidField"><span>Оплачено сейчас</span><div class="money-field"><input id="posSupplyPaidAmount" type="number" min="0" step="0.01" /><b>сом</b></div></label>
+            </div>
+          </section>
+          <details class="supply-extra"><summary>Комментарий</summary><label class="supply-comment"><input id="posSupplyComment" aria-label="Комментарий к поставке" maxlength="240" /></label></details>
+        </form>
+        <details class="recent-supplies supply-extra"><summary>Последние поставки</summary><div id="posRecentSupplies"></div></details>
+        </div>
+          <div class="supply-form-footer"><div><span>Итого</span><strong id="posSupplyFooterTotal">0 сом</strong></div><button class="terminal-primary" id="savePosSupplyButton" type="submit" form="posSupplyForm">Принять поставку</button></div>
+      </aside>
+    </div>
+
+    <div class="drawer-backdrop hidden" id="terminalSettingsDrawer">
+      <aside class="terminal-settings-drawer">
+        <div class="modal-header">
+          <div>
+            <p class="eyebrow">Рабочее место</p>
+            <h2>Настройки кассы</h2>
+          </div>
+          <button class="icon-button" id="closeTerminalSettingsButton" type="button" aria-label="Закрыть"><svg class="ui-icon"><use href="#pos-close"/></svg></button>
+        </div>
+
+        <section class="terminal-identity">
+          <div class="terminal-identity-mark"><svg class="ui-icon"><use href="#pos-settings"/></svg></div>
+          <div><small>Активированная касса</small><strong id="settingsRegisterName">—</strong><span id="settingsBranchName">—</span></div>
+          <i>В сети</i>
+        </section>
+
+        <section class="terminal-settings-section">
+          <header><strong>Устройство</strong><small>Эти параметры сохраняются только в этом браузере</small></header>
+          <label><span>Печать чека</span><select id="receiptPrinterMode"><option value="browser">Системный принтер</option><option value="none">Без печати</option></select></label>
+          <label><span>Название принтера</span><input id="receiptPrinterName" type="text" maxlength="80" placeholder="Например, Касса · чековый принтер" /></label>
+          <label class="terminal-toggle"><input id="autoPrintReceipt" type="checkbox" /><span><strong>Печатать чек после оплаты</strong><small>Окно системной печати откроется автоматически</small></span></label>
+          <label class="terminal-toggle"><input id="printKitchenTicket" type="checkbox" /><span><strong>Печатать заказ на кухню</strong><small>Отдельный кухонный чек при подтверждении продажи</small></span></label>
+          <div class="terminal-settings-actions"><button class="secondary-button" id="testPrinterButton" type="button">Пробная печать</button><button class="terminal-primary" id="saveTerminalSettingsButton" type="button">Сохранить</button></div>
+        </section>
+
+        <section class="terminal-settings-section compact">
+          <header><strong>Данные и доступ</strong><small id="settingsAccountLogin">Аккаунт —</small></header>
+          <button class="terminal-menu-row" id="syncTerminalButton" type="button"><span><strong>Обновить данные</strong><small>Меню, цены и остатки из админки</small></span><b>Обновить</b></button>
+          <button class="terminal-menu-row" id="settingsSwitchOperatorButton" type="button"><span><strong>Сменить сотрудника</strong><small>Вернуться к выбору сотрудника и вводу PIN</small></span><b>Перейти</b></button>
+          <button class="terminal-menu-row danger" id="settingsLogoutButton" type="button"><span><strong>Выйти из кассы</strong><small>Потребуется повторная активация устройства</small></span><b>Выйти</b></button>
+        </section>
+      </aside>
+    </div>
+
+    <div class="operator-lock" id="operatorLock" role="dialog" aria-modal="true" aria-labelledby="operatorLockTitle">
+      <section class="operator-card">
+        <header class="operator-header">
+          <div class="operator-brand"><span>o</span><div><strong>Oimo POS</strong><small id="operatorBranchName">Терминал точки</small></div></div>
+          <button class="operator-exit" id="operatorLogoutButton" type="button">Выйти из точки</button>
+        </header>
+        <div class="operator-body" id="operatorStepPin">
+          <p class="eyebrow">Начало работы</p>
+          <h1 id="operatorLockTitle">Введите ПИН-код</h1>
+          <p class="operator-description">Ваш личный код определит сотрудника и откроет доступные ему функции.</p>
+          <div class="pin-dots" id="pinDots" aria-label="Введено цифр: 0"><i></i><i></i><i></i><i></i></div>
+          <p class="pin-error hidden" id="pinError">Неверный PIN</p>
+          <div class="pin-keypad" id="pinKeypad"></div>
+        </div>
+        <div class="operator-body shift-open-step hidden" id="operatorStepKitchen">
+          <p class="eyebrow">Смена производства</p><h1>Начало работы</h1>
+          <p class="operator-description" id="kitchenEntryMessage">Проверяем смену…</p>
+          <button class="confirm-payment" id="kitchenEntryRetry" type="button" onclick="enterProductionShift()">Проверить смену</button>
+          <button class="operator-back shift-employee-back" type="button" onclick="lockOperator()">Вернуться к ПИН-коду</button>
+        </div>
+        <div class="operator-body shift-open-step hidden" id="operatorStepShift">
+          <p class="eyebrow">Кассовая смена</p>
+          <h1>Откройте смену</h1>
+          <p class="operator-description">Пересчитайте разменные деньги в денежном ящике и укажите остаток на начало смены.</p>
+          <label class="shift-money-field"><span>Остаток в кассе</span><div><input id="openingCashInput" type="number" min="0" step="1" inputmode="decimal" value="0" /><b>сом</b></div></label>
+          <button class="confirm-payment" id="openShiftButton" type="button">Открыть смену</button>
+          <button class="operator-back shift-employee-back" id="shiftChangeOperatorButton" type="button">Войти другим сотрудником</button>
+        </div>
+      </section>
+    </div>
+
+    <div class="modal-backdrop hidden" id="shiftCloseModal" role="dialog" aria-modal="true" aria-labelledby="shiftCloseTitle">
+      <section class="modal payment-modal">
+        <div class="modal-header"><div><p class="eyebrow">Кассовая смена</p><h2 id="shiftCloseTitle">Закрыть смену</h2></div><button class="icon-button" id="cancelShiftCloseButton" type="button" aria-label="Закрыть"><svg class="ui-icon"><use href="#pos-close"/></svg></button></div>
+        <div class="amount-due"><span>Ожидается наличными</span><strong id="expectedShiftCash">0 сом</strong></div>
+        <div class="cash-section"><label>Фактически в денежном ящике</label><div class="cash-input-wrap"><input id="closingCashInput" type="number" min="0" step="1" inputmode="decimal" /><span>сом</span></div></div>
+        <div id="shiftClosingStock"></div>
+        <button class="confirm-payment" id="confirmShiftCloseButton" type="button">Закрыть смену</button>
+      </section>
+    </div>
+
+    <div class="toast hidden" id="toast"></div>
+    <dialog id="productVariantDialog" class="variant-dialog"><header><h2 id="variantDialogTitle"></h2><button id="closeVariantDialog" type="button" aria-label="Закрыть">×</button></header><p>Выберите модификацию</p><div id="variantDialogOptions"></div></dialog>
+    <script src="numeric-inputs.js?v=1"></script>
+    <script src="api-client.js?v=oimo-1"></script>
+    <script src="company-settings.js?v=oimo-1"></script>
+    <script src="app.js?v=mobile-flow-8"></script>
+  </body>
+</html>

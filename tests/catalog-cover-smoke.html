@@ -1,0 +1,26 @@
+<!doctype html><meta charset="utf-8"><pre id="results">RUNNING</pre><iframe id="app" src="../admin.html?test=1#menu/recipes" style="display:none"></iframe><script>
+app.onload=async()=>{
+ const w=app.contentWindow,d=w.document,checks=[],check=(name,ok)=>checks.push(`${ok?'PASS':'FAIL'}:${name}`);
+ try {
+ const canvas=d.createElement('canvas');canvas.width=4;canvas.height=4;canvas.getContext('2d').fillRect(0,0,4,4);
+ const image=canvas.toDataURL('image/png');const blob=await (await fetch(image)).blob();
+ async function upload(prefix){const input=d.querySelector(`#${prefix}CoverEditor [data-cover-file]`);const dt=new w.DataTransfer();dt.items.add(new w.File([blob],'cover.png',{type:'image/png'}));input.files=dt.files;await input.onchange({target:input});d.querySelector(`#${prefix}CoverEditor [data-cover-color]`)?.setAttribute('data-tested','true');return w.CatalogCover.read(prefix).image;}
+ w.openRecipeForm(201);await upload('recipe');d.querySelector('#recipeCoverEditor [data-cover-color]').value='#112233';await w.saveRecipeForm();w.openRecipeForm(201);
+ check('recipe-photo-color-reopen',w.CatalogCover.read('recipe').image.startsWith('data:image/png')&&w.CatalogCover.read('recipe').color==='#112233');
+ check('recipe-list-thumbnail',!!d.querySelector('#recipesTable .catalog-thumb img'));
+ d.querySelector('#recipeCoverEditor [data-cover-remove]').click();await w.saveRecipeForm();w.openRecipeForm(201);check('remove-photo-keeps-color',w.CatalogCover.read('recipe').image===''&&w.CatalogCover.read('recipe').color==='#112233');
+ w.openRecipeForm();check('new-form-resets-image',w.CatalogCover.read('recipe').image==='');
+ w.openIngredientForm('rice');await upload('ingredient');d.querySelector('#ingredientCoverEditor [data-cover-color]').value='#223344';await w.saveIngredientForm();w.openIngredientForm('rice');
+ check('ingredient-photo-color-reopen',!!w.CatalogCover.read('ingredient').image&&w.CatalogCover.read('ingredient').color==='#223344');
+ w.openPreparationForm();d.querySelector('#preparationNameInput').value='Обложка тест';await upload('preparation');d.querySelector('#preparationCoverEditor [data-cover-color]').value='#334455';await w.savePreparationForm();const prep=w.eval('preparations.find(p=>p.name==="Обложка тест")');w.openPreparationForm(prep.id);check('preparation-photo-color-reopen',!!w.CatalogCover.read('preparation').image&&w.CatalogCover.read('preparation').color==='#334455');
+ for (const kind of ['menu','ingredient']) {
+  w.openCategoryForm(kind,0);await upload('category');d.querySelector('#categoryColorText').value='#445566';await w.saveCategoryForm();w.openCategoryForm(kind,0);check(kind+'-category-photo-color-reopen',!!w.CatalogCover.read('category').image&&w.CatalogCover.read('category').color==='#445566');
+ }
+ const ready=w.CatalogCover.read('category').image;
+ try{await w.CatalogCover.load(new w.File(['x'],'bad.svg',{type:'image/svg+xml'}));check('unsupported-file-rejected',false);}catch{check('unsupported-file-rejected',true);}
+ check('invalid-file-preserves-photo',ready===w.CatalogCover.read('category').image);
+ if(new URLSearchParams(location.search).has('preview')){app.style.cssText='position:fixed;inset:0;width:100%;height:100%;border:0';w.openRecipeForm(201);await upload('recipe');}
+ }catch(e){checks.push('FAIL:'+e.stack);}
+ results.textContent=checks.join('|');
+};
+</script>

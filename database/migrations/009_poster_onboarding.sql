@@ -1,0 +1,17 @@
+\set ON_ERROR_STOP on
+
+BEGIN;
+
+ALTER TABLE tenants
+  ADD COLUMN IF NOT EXISTS contact_email TEXT NOT NULL DEFAULT '',
+  ADD COLUMN IF NOT EXISTS phone TEXT NOT NULL DEFAULT '',
+  ADD COLUMN IF NOT EXISTS business_status TEXT NOT NULL DEFAULT 'operating',
+  ADD COLUMN IF NOT EXISTS business_type TEXT NOT NULL DEFAULT 'canteen',
+  ADD COLUMN IF NOT EXISTS service_modes JSONB NOT NULL DEFAULT '[]'::jsonb,
+  ADD COLUMN IF NOT EXISTS employee_range TEXT NOT NULL DEFAULT '1-3';
+
+INSERT INTO schema_migrations (version)
+VALUES ('009_poster_onboarding')
+ON CONFLICT (version) DO NOTHING;
+
+COMMIT;

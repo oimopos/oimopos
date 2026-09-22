@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="ru">
+  <head><meta charset="utf-8"><title>UI system smoke test</title></head>
+  <body>
+    <pre id="results">RUNNING</pre>
+    <script>
+      const checks = [];
+      const check = (name, condition) => checks.push(`${condition ? "PASS" : "FAIL"} ${name}`);
+      Promise.all([
+        fetch("../admin.html?v=36").then((response) => response.text()),
+        fetch("../admin.css?v=36").then((response) => response.text()),
+        fetch("../admin.js?v=36").then((response) => response.text()),
+        fetch("../index.html?v=27").then((response) => response.text()),
+        fetch("../styles.css?v=27").then((response) => response.text()),
+        fetch("../app.js?v=27").then((response) => response.text()),
+      ]).then(([adminHtml, adminCss, adminJs, posHtml, posCss, posJs]) => {
+        const legacySymbols = /[⌂◇♙⚙⌄⌁⇣⇄□◫↗≡▣↪＋☷⇩⇧▧⌕♧▱]/;
+        check("admin-svg-system", adminHtml.includes('id="ui-home"') && adminHtml.includes('id="ui-inventory"') && adminHtml.includes('id="ui-close"'));
+        check("pos-svg-system", posHtml.includes('id="pos-receipt"') && posHtml.includes('id="pos-card"') && posHtml.includes('id="pos-tray"'));
+        check("no-legacy-symbol-icons", !legacySymbols.test(adminHtml + adminJs + posHtml + posJs));
+        check("readable-admin-type", !/font-size:\s*(7|8|9|10)px/.test(adminCss));
+        check("readable-pos-type", !/font-size:\s*(7|8|9|10)px/.test(posCss));
+        check("moderate-font-weight", !/font-weight:\s*(750|800|850|900)/.test(adminCss + posCss));
+        check("responsive-admin-navigation", adminCss.includes("@media (max-width: 1080px)") && adminCss.includes("width: 78px"));
+        check("icon-render-helpers", adminJs.includes("function uiIcon") && posJs.includes("posIcon"));
+        check("receipt-history-ui", adminHtml.includes('data-analytics-tab="receipts"') && adminHtml.includes('id="receiptModal"') && adminJs.includes("function renderReceipts"));
+        check("safe-catalog-delete-ui", adminHtml.includes('id="catalogDeleteModal"') && adminHtml.includes('id="deleteIngredientButton"') && adminHtml.includes('id="deleteRecipeButton"') && adminJs.includes("catalogDeleteConstraint"));
+        document.querySelector("#results").textContent = checks.join("\n");
+        document.body.dataset.done = "true";
+      }).catch((error) => {
+        document.querySelector("#results").textContent = `FAIL ${error.message}`;
+        document.body.dataset.done = "true";
+      });
+    </script>
+  </body>
+</html>
