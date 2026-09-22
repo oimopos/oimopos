@@ -1580,8 +1580,8 @@ def _tenant_record(connection: Connection, tenant_id: str) -> dict:
                MAX(users.login) FILTER (WHERE users.role = 'owner' AND users.is_active) AS owner_login,
                MAX(users.display_name) FILTER (WHERE users.role = 'owner' AND users.is_active) AS owner_name
         FROM tenants tenant
-        JOIN tenant_subscriptions subscription ON subscription.tenant_id = tenant.id
-        JOIN operational_state workspace ON workspace.tenant_id = tenant.id
+        LEFT JOIN tenant_subscriptions subscription ON subscription.tenant_id = tenant.id
+        LEFT JOIN operational_state workspace ON workspace.tenant_id = tenant.id
         LEFT JOIN auth_users users ON users.tenant_id = tenant.id
         WHERE tenant.id = %s
         GROUP BY tenant.id, subscription.tenant_id, workspace.tenant_id

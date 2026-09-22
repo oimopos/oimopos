@@ -184,8 +184,12 @@ async function createTenant(event) {
     $("#credentialsRegisterLogin").textContent = payload.slug;
     $("#credentialsRegisterPassword").textContent = registerPassword;
     $("#credentialsModal").classList.remove("hidden");
-    await loadPlans();
-    await loadTenants();
+    $("#tenantSearch").value = "";
+    $("#tenantStatusFilter").value = "all";
+    tenants = [tenant, ...tenants.filter(row => row.id !== tenant.id)];
+    renderTenants();
+    try { await loadTenants(); }
+    catch (refreshError) { showToast("Аккаунт создан, но список не обновлён: " + refreshError.message); }
   } catch (error) {
     errorBox.textContent = error.message || "Не удалось создать аккаунт";
     errorBox.classList.remove("hidden");
@@ -321,8 +325,8 @@ async function bootstrap() {
     sessionStorage.setItem(sessionKey, JSON.stringify(response.session));
     $("#sessionName").textContent = response.session.name;
     $("#sessionInitials").textContent = response.session.initials;
-    await loadPlans();
     await loadTenants();
+    await loadPlans();
   } catch (error) {
     if (error.status === 401 || error.status === 403) {
       sessionStorage.removeItem(sessionKey);
