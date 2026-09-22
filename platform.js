@@ -4,6 +4,8 @@ let tenants = [];
 let plans = [];
 const planLabel = code => plans.find(plan => plan.code === code)?.name || ({canteen:"Столовая", restaurant:"Ресторан", starter:"Starter (архивный)", business:"Business (архивный)", enterprise:"Enterprise (архивный)"})[code] || code;
 let currentCredentials = null;
+const platformLoginUrl = new URL("/login", location.origin).href;
+document.querySelector("#credentialsAdminUrl").textContent = platformLoginUrl;
 let editingTenantId = null;
 let tenantStep = 1;
 
@@ -358,7 +360,7 @@ document.querySelectorAll("[data-close-events]").forEach((button) => button.addE
 $("#tenantSettingsForm").addEventListener("submit", saveTenantSettings);
 $("#copyCredentialsButton").addEventListener("click", async () => {
   if (!currentCredentials) return;
-  const text = `Oimo — ${currentCredentials.name}\nАдмин-панель: ${location.origin}/login\nEmail владельца: ${currentCredentials.login}\nПароль владельца: ${currentCredentials.password}\nЗаведение: ${currentCredentials.location}\nЛогин терминала: ${currentCredentials.registerLogin}\nПароль кассы: ${currentCredentials.registerPassword}`;
+  const text = `Oimo — ${currentCredentials.name}\nАдмин-панель: ${platformLoginUrl}\nEmail владельца: ${currentCredentials.login}\nПароль владельца: ${currentCredentials.password}\nЗаведение: ${currentCredentials.location}\nЛогин терминала: ${currentCredentials.registerLogin}\nПароль кассы: ${currentCredentials.registerPassword}`;
   try { await navigator.clipboard.writeText(text); showToast("Данные доступа скопированы"); } catch (_) { showToast("Не удалось скопировать автоматически"); }
 });
 $("#openEventsButton").addEventListener("click", openEvents);
