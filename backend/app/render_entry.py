@@ -3,7 +3,8 @@ import os
 from pathlib import Path
 from urllib.parse import urlsplit
 
-from fastapi.responses import RedirectResponse
+from fastapi import Request
+from fastapi.responses import RedirectResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 
 
@@ -33,13 +34,35 @@ async def cloud_headers(request, call_next):
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["X-Frame-Options"] = "SAMEORIGIN"
     response.headers["Referrer-Policy"] = "no-referrer"
-    response.headers["Cache-Control"] = "no-store" if request.url.path.startswith(("/api/", "/health")) or request.url.path.endswith(".html") else "no-cache"
+    response.headers["Cache-Control"] = "no-store" if request.url.path.startswith(("/api/", "/health")) or request.url.path.endswith(".html") or request.url.path in {"/pos", "/admin", "/login", "/platform"} else "no-cache"
     return response
 
 
 @app.get("/", include_in_schema=False)
 def home():
-    return RedirectResponse("/login.html")
+    return RedirectResponse("/login")
+
+
+PUBLIC = Path(__file__).resolve().parents[1] / "public"
+PAGES = {"pos": "index.html", "admin": "admin.html", "login": "login.html", "platform": "platform.html"}
+
+
+def page_response(filename):
+    async def endpoint():
+        return FileResponse(PUBLIC / filename, headers={"Cache-Control": "no-store"})
+    return endpoint
+
+
+def legacy_redirect(path):
+    async def endpoint(request: Request):
+        query = request.url.query
+        return RedirectResponse(path + ("?" + query if query else ""), status_code=301)
+    return endpoint
+
+
+for page, filename in PAGES.items():
+    app.add_api_route("/" + page, page_response(filename), methods=["GET"], include_in_schema=False)
+    app.add_api_route("/" + filename, legacy_redirect("/" + page), methods=["GET"], include_in_schema=False)
 
 
 app.mount("/", StaticFiles(directory=Path(__file__).resolve().parents[1] / "public", html=True), name="frontend")

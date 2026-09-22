@@ -1040,7 +1040,7 @@ function terminalLoginUrl(extra = {}) {
   const params = new URLSearchParams({ mode: "pos", ...extra });
   if (currentSession?.tenantSlug) params.set("login", currentSession.tenantSlug);
   if (currentSession?.registerId) params.set("register", currentSession.registerId);
-  return `login.html?${params.toString()}`;
+  return `/login?${params.toString()}`;
 }
 
 function tickClock() {
@@ -1282,7 +1282,7 @@ async function initializePos() {
   } catch (error) {
     if ([401, 403].includes(error.status)) {
       sessionStorage.removeItem(authSessionKey);
-      location.replace("login.html?mode=pos");
+      location.replace("/login?mode=pos");
       return;
     }
     $("#productGrid").innerHTML = `<div class="no-products">${escapeHtml(error.message || "Сервер Oimo недоступен")}</div>`;

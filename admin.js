@@ -16,7 +16,7 @@ function loadAuthSession() {
 }
 
 const authSession = loadAuthSession();
-if (!authSession && !testMode) location.replace("login.html");
+if (!authSession && !testMode) location.replace("/login");
 const currentSession = authSession || { role: "owner", name: "Дастан", roleLabel: "Главный администратор", scope: "Все точки", initials: "ДА" };
 const currentRole = currentSession.role;
 const hasRole = (...roles) => roles.includes(currentRole);
@@ -31,7 +31,7 @@ window.addEventListener("pageshow", (event) => {
 
 function signOutRevokedBranch() {
   sessionStorage.removeItem(authSessionKey);
-  location.replace("login.html?access=changed");
+  location.replace("/login?access=changed");
 }
 
 function checkCurrentBranchAccess() {
@@ -256,7 +256,7 @@ async function runServerAction(action, payload, successMessage = "") {
   } catch (error) {
     if (error.status === 401) {
       sessionStorage.removeItem(authSessionKey);
-      location.replace("login.html?access=changed");
+      location.replace("/login?access=changed");
       return null;
     }
     showToast(error.message || "Не удалось сохранить данные на сервере");
@@ -276,7 +276,7 @@ async function refreshServerWorkspace({ silent = true } = {}) {
   } catch (error) {
     if (error.status === 401) {
       sessionStorage.removeItem(authSessionKey);
-      location.replace("login.html?access=changed");
+      location.replace("/login?access=changed");
     } else if (!silent) showToast(error.message);
   }
 }
@@ -2423,7 +2423,7 @@ function openRegisterTerminal(registerId = null, loginOverride = "") {
     return;
   }
   const login = loginOverride || currentSession.login || currentSession.tenantSlug || register.account_login;
-  const url = `login.html?mode=pos&register=${encodeURIComponent(register.id)}&login=${encodeURIComponent(login)}`;
+  const url = `/login?mode=pos&register=${encodeURIComponent(register.id)}&login=${encodeURIComponent(login)}`;
   window.open(url, "_blank", "noopener");
 }
 
@@ -2713,10 +2713,10 @@ async function saveEmployee() {
       $("#employeeAccessSecondaryLabel").textContent = posEmployee ? "Способ входа" : "Временный пароль";
       $("#createdEmployeeLogin").textContent = posEmployee ? pin : login;
       $("#createdEmployeePassword").textContent = posEmployee ? "На кассе аккаунта" : password;
-      $("#employeeAccessHint").textContent = posEmployee ? `${branch?.name || "Заведение"} · операции будут записаны на имя ${saved.display_name}.` : `${employeeRoleLabel(saved.staff_role)} · ${savedPermissions.posAccess ? `PIN кассы: ${pin}. ` : ""}Вход: ${location.origin}/login.html`;
+      $("#employeeAccessHint").textContent = posEmployee ? `${branch?.name || "Заведение"} · операции будут записаны на имя ${saved.display_name}.` : `${employeeRoleLabel(saved.staff_role)} · ${savedPermissions.posAccess ? `PIN кассы: ${pin}. ` : ""}Вход: ${location.origin}/login`;
       lastEmployeeAccessText = posEmployee
         ? `${saved.display_name}\n${employeeRoleLabel(saved.staff_role)} · ${branch?.name || "Заведение"}\nPIN: ${pin}\nВход: на кассе аккаунта`
-        : `${saved.display_name}\n${employeeRoleLabel(saved.staff_role)} · ${branch?.name || "Заведение"}\nВход: ${location.origin}/login.html\nЛогин: ${login}\nВременный пароль: ${password}${savedPermissions.posAccess ? `\nPIN кассы: ${pin}` : ""}`;
+        : `${saved.display_name}\n${employeeRoleLabel(saved.staff_role)} · ${branch?.name || "Заведение"}\nВход: ${location.origin}/login\nЛогин: ${login}\nВременный пароль: ${password}${savedPermissions.posAccess ? `\nPIN кассы: ${pin}` : ""}`;
       $("#employeeAccessModal").classList.remove("hidden");
     } else showToast("Данные сотрудника сохранены");
   } catch (error) {
@@ -6341,7 +6341,7 @@ $("#signOutButton").addEventListener("click", async () => {
     try { await window.AshkanaApi.logout(); } catch {}
   }
   sessionStorage.removeItem(authSessionKey);
-  location.href = "login.html";
+  location.href = "/login";
 });
 document.addEventListener("keydown", (event) => {
   if (event.key === "Escape") {
@@ -6425,7 +6425,7 @@ async function initializeApplication() {
       Object.assign(currentSession, authResponse.session);
       sessionStorage.setItem(authSessionKey, JSON.stringify(authResponse.session));
       if (currentRole === "branch" && ["cashier", "waiter", "hall_admin", "pos_terminal", "production"].includes(currentSession.staffRole)) {
-        location.replace(currentSession.route || "index.html?v=45");
+        location.replace(currentSession.route || "/pos");
         return;
       }
       const workspace = await window.AshkanaApi.workspace();
@@ -6446,7 +6446,7 @@ async function initializeApplication() {
       workspaceRefreshTimer = window.setInterval(() => refreshServerWorkspace(), 15000);
     } catch (error) {
       sessionStorage.removeItem(authSessionKey);
-      location.replace([401, 403].includes(error.status) ? "login.html?access=changed" : "login.html?server=unavailable");
+      location.replace([401, 403].includes(error.status) ? "/login?access=changed" : "/login?server=unavailable");
       return;
     }
   }

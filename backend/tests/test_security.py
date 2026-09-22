@@ -93,7 +93,7 @@ def test_platform_owner_has_separate_route_and_no_tenant_workspace() -> None:
 
     session = _user_session(platform_user)
 
-    assert session["route"].startswith("platform.html")
+    assert session["route"].startswith("/platform")
     with pytest.raises(HTTPException) as error:
         _tenant_user(platform_user)
     assert error.value.status_code == 403
@@ -133,7 +133,7 @@ def test_point_terminal_session_opens_pos() -> None:
 
     assert session["staffRole"] == "pos_terminal"
     assert session["roleLabel"] == "Касса"
-    assert session["route"].startswith("index.html")
+    assert session["route"].startswith("/pos")
 
 
 def test_staff_permissions_are_separated_by_job() -> None:

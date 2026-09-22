@@ -189,7 +189,7 @@ def _user_session(user: dict, state: dict | None = None) -> dict:
         return {
             "login": user["login"], "role": "platform_owner", "name": user["display_name"],
             "roleLabel": "Владелец платформы", "scope": "Все клиенты SaaS", "initials": "ВП",
-            "accountVersion": user["account_version"], "route": "platform.html?v=45",
+            "accountVersion": user["account_version"], "route": "/platform",
         }
     if state is None:
         raise HTTPException(status_code=503, detail="Рабочее пространство компании не загружено")
@@ -204,7 +204,7 @@ def _user_session(user: dict, state: dict | None = None) -> dict:
         return {
             "login": user["login"], "role": "owner", "name": user["display_name"],
             "roleLabel": "Администратор компании", "scope": user.get("tenant_name") or "Аккаунт", "initials": "АК",
-            "accountVersion": user["account_version"], "route": "admin.html?v=54#dashboard", **tenant,
+            "accountVersion": user["account_version"], "route": "/admin#dashboard", **tenant,
         }
     branch = next((entry for entry in state["branches"] if entry["id"] == user["branch_id"]), None)
     if not branch or branch.get("status") != "active":
@@ -212,17 +212,17 @@ def _user_session(user: dict, state: dict | None = None) -> dict:
     staff_role = user.get("staff_role") or "branch_manager"
     permissions = _user_permissions(user)
     staff_profiles = {
-        "pos_terminal": ("Касса", "index.html?v=48"),
-        "branch_manager": ("Руководитель", "admin.html?v=54#dashboard"),
-        "hall_admin": ("Администратор зала", "index.html?v=48"),
-        "waiter": ("Официант", "index.html?v=48"),
-        "storekeeper": ("Кладовщик", "admin.html?v=54#inventory/supplies"),
-        "production": ("Сотрудник производства", "index.html?v=production-pin-lock-7"),
-        "marketer": ("Маркетолог", "admin.html?v=54#reports/sales"),
-        "cashier": ("Кассир", "index.html?v=48"),
+        "pos_terminal": ("Касса", "/pos"),
+        "branch_manager": ("Руководитель", "/admin#dashboard"),
+        "hall_admin": ("Администратор зала", "/pos"),
+        "waiter": ("Официант", "/pos"),
+        "storekeeper": ("Кладовщик", "/admin#inventory/supplies"),
+        "production": ("Сотрудник производства", "/pos"),
+        "marketer": ("Маркетолог", "/admin#reports/sales"),
+        "cashier": ("Кассир", "/pos"),
     }
     role_label, legacy_route = staff_profiles.get(staff_role, staff_profiles["branch_manager"])
-    route = legacy_route if any(permissions.get(key) for key in ADMIN_PERMISSION_KEYS) else "index.html?v=48"
+    route = legacy_route if any(permissions.get(key) for key in ADMIN_PERMISSION_KEYS) else "/pos"
     initials = "".join(word[0] for word in user["display_name"].split()[:2]).upper() or f"Т{branch['number']}"
     return {
         "login": user.get("tenant_slug") if staff_role == "pos_terminal" else user["login"],

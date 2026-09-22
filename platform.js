@@ -306,14 +306,14 @@ async function openEvents() {
 async function signOut() {
   try { await window.AshkanaApi.logout(); } catch (_) { /* local session is cleared below */ }
   sessionStorage.removeItem(sessionKey);
-  location.replace("login.html");
+  location.replace("/login");
 }
 
 async function bootstrap() {
   try {
     const response = await window.AshkanaApi.me();
     if (response.session.role !== "platform_owner") {
-      location.replace(response.session.route || "admin.html");
+      location.replace(response.session.route || "/admin");
       return;
     }
     sessionStorage.setItem(sessionKey, JSON.stringify(response.session));
@@ -324,7 +324,7 @@ async function bootstrap() {
   } catch (error) {
     if (error.status === 401 || error.status === 403) {
       sessionStorage.removeItem(sessionKey);
-      location.replace("login.html");
+      location.replace("/login");
       return;
     }
     showToast(error.message || "Сервер недоступен");
@@ -358,7 +358,7 @@ document.querySelectorAll("[data-close-events]").forEach((button) => button.addE
 $("#tenantSettingsForm").addEventListener("submit", saveTenantSettings);
 $("#copyCredentialsButton").addEventListener("click", async () => {
   if (!currentCredentials) return;
-  const text = `Oimo — ${currentCredentials.name}\nАдмин-панель: ${location.origin}/login.html\nEmail владельца: ${currentCredentials.login}\nПароль владельца: ${currentCredentials.password}\nЗаведение: ${currentCredentials.location}\nЛогин терминала: ${currentCredentials.registerLogin}\nПароль кассы: ${currentCredentials.registerPassword}`;
+  const text = `Oimo — ${currentCredentials.name}\nАдмин-панель: ${location.origin}/login\nEmail владельца: ${currentCredentials.login}\nПароль владельца: ${currentCredentials.password}\nЗаведение: ${currentCredentials.location}\nЛогин терминала: ${currentCredentials.registerLogin}\nПароль кассы: ${currentCredentials.registerPassword}`;
   try { await navigator.clipboard.writeText(text); showToast("Данные доступа скопированы"); } catch (_) { showToast("Не удалось скопировать автоматически"); }
 });
 $("#openEventsButton").addEventListener("click", openEvents);

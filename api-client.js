@@ -15,7 +15,7 @@
     : [`http://127.0.0.1:8001/api/v1`];
   let activeBase = sessionStorage.getItem("ashkana-api-base-v1") || "";
   const pageName = location.pathname.split("/").pop() || "";
-  let clientMode = pageName === "index.html" || new URLSearchParams(location.search).get("mode") === "pos" ? "pos" : "admin";
+  let clientMode = ["index.html", "pos"].includes(pageName) || new URLSearchParams(location.search).get("mode") === "pos" ? "pos" : "admin";
 
   async function parseResponse(response) {
     const contentType = response.headers.get("content-type") || "";
